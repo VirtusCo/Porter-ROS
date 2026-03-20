@@ -1,0 +1,17 @@
+# West manifest for Virtus ESP32 firmware
+# Zephyr v4.0.0 pinned
+manifest:
+  remotes:
+    - name: zephyrproject-rtos
+      url-base: https://github.com/zephyrproject-rtos
+  projects:
+    - name: zephyr
+      remote: zephyrproject-rtos
+      revision: v4.0.0
+      import:
+        name-allowlist:
+          - cmsis
+          - hal_espressif
+          - mbedtls
+  self:
+    path: app

@@ -86,3 +86,5 @@ COPY docker/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["bash"]
+# Ensure GGUF model directory exists (models downloaded at runtime)
+RUN mkdir -p /workspace/src/porter_ai_assistant/models/gguf

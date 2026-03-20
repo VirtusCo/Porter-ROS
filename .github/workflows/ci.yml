@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -31,12 +33,12 @@ jobs:
       options: --user root
     steps:
       - uses: actions/checkout@v4
-      - name: Install system deps
+        with:
+          lfs: true
+      - name: Install system deps + YDLidar SDK
         run: |
           apt-get update
           apt-get install -y python3-pip python3-colcon-common-extensions python3-rosdep build-essential cmake git
-      - name: Install YDLidar SDK
-        run: |
           git clone --depth 1 https://github.com/YDLIDAR/YDLidar-SDK.git /tmp/sdk
           mkdir -p /tmp/sdk/build && cd /tmp/sdk/build
           cmake .. -DCMAKE_BUILD_TYPE=Release && make -j$(nproc) && make install && ldconfig
@@ -55,6 +57,35 @@ jobs:
           source install/setup.bash
           colcon test --event-handlers console_direct+
           colcon test-result --verbose || true
+
+  firmware-ztest:
+    name: ESP32 Firmware Ztest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Zephyr toolchain
+        run: |
+          pip install west
+          sudo apt-get update && sudo apt-get install -y cmake ninja-build gperf ccache dfu-util \
+            device-tree-compiler wget xz-utils file make gcc gcc-multilib g++-multilib libsdl2-dev
+      - name: Init west workspace
+        run: |
+          cd esp32_firmware
+          west init -l .
+          west update --narrow --fetch-opt=--depth=1
+      - name: Install Zephyr SDK (minimal)
+        run: |
+          wget -q https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.17.0/zephyr-sdk-0.17.0_linux-x86_64_minimal.tar.xz -O /tmp/sdk.tar.xz
+          tar xf /tmp/sdk.tar.xz -C ~/
+          ~/zephyr-sdk-0.17.0/setup.sh -t xtensa-espressif_esp32_zephyr-elf -c
+      - name: Run Ztest on native_sim
+        run: |
+          cd esp32_firmware
+          source ../zephyr/zephyr-env.sh 2>/dev/null || true
+          west twister -T tests/ -p native_sim --no-color || true
 
   lint:
     name: Lint
