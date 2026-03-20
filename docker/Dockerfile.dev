@@ -80,7 +80,6 @@ RUN python3 -m venv /workspace/ai_venv && \
     psutil>=5.9.0
 
 # ── AI GGUF models (baked into image for self-contained deployment) ──────────
-COPY src/porter_ai_assistant/models/gguf/ src/porter_ai_assistant/models/gguf/
 
 # ── Entrypoint ──────────────────────────────────────────────────────────────
 COPY docker/docker-entrypoint.sh /docker-entrypoint.sh
