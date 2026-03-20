@@ -58,7 +58,7 @@ jobs:
           python-version: '3.12'
       - name: Install tools
         run: |
-          pip install west pyelftools
+          pip install west pyelftools intelhex esptool
           sudo apt-get update && sudo apt-get install -y cmake ninja-build gperf ccache \
             device-tree-compiler wget xz-utils file make gcc gcc-multilib g++-multilib
       - name: West init + update
