@@ -1,0 +1,10 @@
+# Porter Robot — Sensor Fusion Application Kconfig
+#
+# Sources the shared common library Kconfig (transport layer)
+# then imports all Zephyr base symbols.
+
+mainmenu "Porter Sensor Fusion"
+
+rsource "../common/Kconfig"
+
+source "Kconfig.zephyr"

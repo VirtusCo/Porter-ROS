@@ -1,0 +1,82 @@
+{
+  "seed": 42,
+  "conversational": {
+    "train": 7000,
+    "eval": 1400,
+    "train_categories": {
+      "navigation": 1000,
+      "flight_info": 918,
+      "dining_shopping": 783,
+      "services": 613,
+      "check_in": 502,
+      "baggage": 441,
+      "multilingual": 402,
+      "transport": 379,
+      "porter_identity": 361,
+      "general": 359,
+      "accessibility": 344,
+      "smalltalk": 344,
+      "security": 313,
+      "emergency": 241
+    },
+    "eval_categories": {
+      "flight_info": 216,
+      "navigation": 195,
+      "dining_shopping": 149,
+      "check_in": 126,
+      "services": 124,
+      "general": 80,
+      "baggage": 75,
+      "multilingual": 73,
+      "porter_identity": 72,
+      "transport": 71,
+      "smalltalk": 64,
+      "accessibility": 54,
+      "emergency": 51,
+      "security": 50
+    }
+  },
+  "tool_use": {
+    "train": 3000,
+    "eval": 600,
+    "train_categories": {
+      "tool_directions": 338,
+      "tool_flight": 325,
+      "tool_find": 296,
+      "tool_escort": 296,
+      "tool_assist": 230,
+      "tool_wait": 216,
+      "tool_airline": 215,
+      "tool_weigh": 203,
+      "tool_transport": 200,
+      "tool_map": 194,
+      "tool_translate": 163,
+      "tool_reminder": 162,
+      "tool_incident": 162
+    },
+    "eval_categories": {
+      "tool_directions": 72,
+      "tool_find": 72,
+      "tool_escort": 66,
+      "tool_flight": 62,
+      "tool_assist": 54,
+      "tool_map": 45,
+      "tool_weigh": 37,
+      "tool_reminder": 36,
+      "tool_transport": 35,
+      "tool_translate": 32,
+      "tool_incident": 32,
+      "tool_wait": 30,
+      "tool_airline": 27
+    }
+  },
+  "combined": {
+    "train": 10000,
+    "eval": 2000
+  },
+  "totals": {
+    "train": 10000,
+    "eval": 2000,
+    "grand_total": 12000
+  }
+}

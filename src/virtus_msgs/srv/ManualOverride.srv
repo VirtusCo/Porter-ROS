@@ -1,0 +1,12 @@
+# Manual operator override command
+uint8  command                   # Override command (see constants)
+uint8  CMD_STOP          = 1     # Emergency stop
+uint8  CMD_RESUME        = 2     # Resume normal operation
+uint8  CMD_RETURN_BASE   = 3     # Return to charging base
+uint8  CMD_ESTOP         = 4     # Hardware emergency stop
+string operator_id               # Who issued the override
+string reason                    # Override reason
+---
+bool   accepted                  # True if override accepted
+uint8  previous_state            # FSM state before override
+uint8  new_state                 # FSM state after override

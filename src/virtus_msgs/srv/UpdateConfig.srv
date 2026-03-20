@@ -1,0 +1,8 @@
+# Update robot configuration parameter
+string config_key                # Configuration key to update
+string config_value_json         # JSON-serialized new value
+string updated_by                # Who requested the change
+---
+bool   accepted                  # True if update accepted
+string previous_value_json       # Previous value (JSON)
+string validation_error          # Empty if accepted

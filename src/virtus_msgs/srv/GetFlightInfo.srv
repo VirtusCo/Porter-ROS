@@ -1,0 +1,13 @@
+# Request flight information from airport database
+string flight_number             # e.g. "AI 6E 421"
+string airport_iata              # e.g. "COK" (Kochi)
+---
+bool   found                     # True if flight was found
+string airline                   # Airline name
+string origin                    # Origin airport
+string destination               # Destination airport
+string gate                      # Gate number e.g. "C5"
+string terminal                  # Terminal name
+string status                    # "ON_TIME", "DELAYED", "BOARDING", "DEPARTED"
+int32  delay_minutes             # 0 if on time
+string baggage_belt              # Baggage belt number

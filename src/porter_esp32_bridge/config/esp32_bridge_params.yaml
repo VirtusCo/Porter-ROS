@@ -1,0 +1,24 @@
+# ESP32 Bridge Node Parameters
+# See porter_esp32_bridge/README.md for details
+
+esp32_motor_bridge:
+  ros__parameters:
+    port: "/dev/esp32_motors"           # Serial device (use udev symlink)
+    baudrate: 115200                     # baud
+    heartbeat_interval: 0.2              # seconds — keepalive to ESP32
+    status_poll_interval: 1.0            # seconds — poll motor status
+    cmd_vel_timeout: 0.5                 # seconds — stop motors if no cmd_vel
+    wheel_separation: 0.35               # metres — distance between wheels
+    wheel_radius: 0.05                   # metres
+    max_speed_pct: 100.0                 # max duty cycle percentage
+    reconnect_interval: 3.0              # seconds — retry if disconnected
+
+esp32_sensor_bridge:
+  ros__parameters:
+    port: "/dev/esp32_sensors"           # Serial device (use udev symlink)
+    baudrate: 115200                     # baud
+    reconnect_interval: 3.0              # seconds
+    frame_id: "sensor_frame"             # TF frame for Range messages
+    fov: 0.44                            # radians — field of view (~25°)
+    min_range: 0.02                      # metres
+    max_range: 4.0                       # metres

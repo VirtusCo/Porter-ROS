@@ -1,0 +1,72 @@
+[
+  {
+    "id": "checkin_general",
+    "category": "check-in",
+    "title": "Check-In Process",
+    "content": "Check-in counters on Level 2 in departures hall. Most airlines open counters 3 hours before departure and close 45-60 minutes before. Web check-in available 24-48 hours before via airline app or website. Self-service kiosks near check-in hall entrance (about 20 kiosks). If you have mobile boarding pass and no checked luggage, proceed directly to security. Baggage drop counters (separate, faster line) for those with web check-in.",
+    "keywords": ["check in", "check-in", "counter", "boarding pass", "kiosk", "self service", "web check in", "online check in"]
+  },
+  {
+    "id": "checkin_security",
+    "category": "security",
+    "title": "Security Screening",
+    "content": "Security checkpoints at centre of Level 2 in each terminal. Remove laptops, liquids (under 100ml in clear bag), belts, jackets for screening. Prohibited items: sharp objects, lighters in bags (one on person OK), liquids over 100ml, batteries over 160Wh. Transfer security lane available for connecting passengers (faster). Peak hours: 6-9 AM and 5-8 PM — allow extra time. Priority lanes for business class, elderly, families with infants.",
+    "keywords": ["security", "screening", "security check", "x-ray", "metal detector", "liquid", "prohibited", "banned items", "regulations"]
+  },
+  {
+    "id": "checkin_immigration",
+    "category": "immigration",
+    "title": "Immigration and Passport Control",
+    "content": "Immigration/passport control between check-in and international gates in Terminal 3. Indian citizens: regular and e-gate (automated) counters. Foreign nationals: separate counters. Documents needed: passport, boarding pass, visa (if applicable). E-gates require chipped passport. Peak wait 20-30 minutes. Allow 30-45 minutes for immigration during peak hours. Transit passengers may skip immigration if staying in transit zone.",
+    "keywords": ["immigration", "passport", "visa", "passport control", "customs", "border", "e-gate", "foreign"]
+  },
+  {
+    "id": "checkin_customs",
+    "category": "customs",
+    "title": "Customs Declaration",
+    "content": "Customs in arrivals after baggage claim. Green channel: nothing to declare (most passengers). Red channel: goods to declare (exceeding duty-free limits, commercial goods, foreign currency over $5000). Duty-free allowances: 1L alcohol, 200 cigarettes, gifts up to ₹50,000 for Indian residents. Random baggage scanning may apply in green channel. Agricultural products, plants, and some food items may be restricted.",
+    "keywords": ["customs", "declare", "duty", "allowance", "import", "restrict", "green channel", "red channel"]
+  },
+  {
+    "id": "baggage_general",
+    "category": "baggage",
+    "title": "Baggage Allowance and Rules",
+    "content": "Typical economy class: Checked bags 15-23 kg (one for domestic, often two for international). Cabin bag 7-10 kg, max 55×40×20 cm. One personal item (laptop bag, purse) on most airlines. Oversize baggage counter at far end of check-in hall for golf clubs, surfboards, strollers. Extra baggage fees vary by airline and route — check airline website. Airlines weigh bags at check-in counter.",
+    "keywords": ["baggage", "luggage", "bag", "allowance", "weight", "overweight", "excess baggage", "carry on", "cabin bag", "checked bag", "suitcase"]
+  },
+  {
+    "id": "baggage_claim",
+    "category": "baggage",
+    "title": "Baggage Claim and Lost Luggage",
+    "content": "Baggage claim on Level 0, past immigration/customs for international, directly after arrival corridor for domestic. Carousel numbers on screens near baggage hall entrance — match to flight number. Lost Baggage counter at far end of baggage hall. If bag missing: wait until carousel stops, check oversize area, then file report at Lost Baggage counter. Need baggage claim tag (sticker on boarding pass) and ID. Most delayed bags delivered within 24 hours.",
+    "keywords": ["baggage claim", "carousel", "lost luggage", "missing bag", "delayed bag", "luggage damaged", "bag not arrived", "collect bag"]
+  },
+  {
+    "id": "airline_time_guide",
+    "category": "travel-tips",
+    "title": "Recommended Arrival Times",
+    "content": "Recommended arrival before flight: Domestic flights 2 hours, International flights 3 hours. This allows for: Check-in and baggage drop (30-45 min), Security screening (15-30 min, varies by time), Immigration/passport control for international (15-30 min), Walking to gate (5-15 min), Buffer for delays. Peak hours (early morning 6-9 AM, evening 5-8 PM) need extra 15-30 minutes. First-time flyers should add 30 minutes extra.",
+    "keywords": ["arrive early", "how early", "when should i arrive", "time before flight", "hours before", "departure time"]
+  },
+  {
+    "id": "accessibility_services",
+    "category": "accessibility",
+    "title": "Accessibility and Special Needs",
+    "content": "Airport provides wheelchair assistance — request from airline at booking or at check-in counter. Electric buggies available for long-distance transfers between gates (ask at information desk). Accessible restrooms at all restroom locations. Elevators at every terminal junction. Priority security lanes for passengers with disabilities, elderly, families with infants. Guide dogs permitted throughout the airport. Hearing loop systems at information desks and gates. Braille signage on elevators.",
+    "keywords": ["wheelchair", "disabled", "accessibility", "special needs", "mobility", "assistance", "buggy", "elderly", "handicap", "blind", "deaf", "hearing"]
+  },
+  {
+    "id": "children_family",
+    "category": "family",
+    "title": "Family and Children Services",
+    "content": "Family restrooms with baby changing stations at all main restroom locations. Kids play area on Level 2 near Gate A20 (domestic) and near Gate C12 (international). Stroller-friendly paths throughout terminal. Priority security lanes for families with infants. Baby food heating available at food court restaurants. Nursing rooms near family restrooms. Family lounge in Terminal 3 near Gate C5. Child-safe areas with seating near most gates.",
+    "keywords": ["child", "children", "baby", "infant", "family", "kids", "play area", "stroller", "pram", "nursing", "diaper"]
+  },
+  {
+    "id": "porter_robot_info",
+    "category": "virtue",
+    "title": "About Virtue and Porter Robot",
+    "content": "I am Virtue, an AI airport assistant robot made by VirtusCo. My capabilities: Carrying luggage up to 120 kg on my platform. Escorting passengers to gates, counters, and facilities. Answering airport questions (directions, services, general info). Displaying maps and flight info on my touchscreen. Weighing bags with built-in scale. I do NOT have: cameras, internet access, social media, phone calling, or real-time flight data. I cannot book flights or make purchases. For real-time flight info, check FIDS screens or airline apps.",
+    "keywords": ["virtue", "porter", "robot", "who are you", "what can you do", "your capabilities", "virtusco", "help me", "assistant"]
+  }
+]

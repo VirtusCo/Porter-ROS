@@ -1,0 +1,100 @@
+###############################################################################
+# docker-compose.dev.yml — Porter Robot Development Environment
+#
+# Usage:   cd porter_robot/          # ← MUST run from repo root
+#          docker compose -f docker/docker-compose.dev.yml build
+#          docker compose -f docker/docker-compose.dev.yml up -d
+#          docker exec -it porter_dev bash
+#
+# Hardware: To test with LIDAR, uncomment the 'devices' and 'privileged'
+#           lines, or use the porter_robot service profile.
+###############################################################################
+
+services:
+  # ── Development shell ────────────────────────────────────────────────────
+  porter_dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    container_name: porter_dev
+    network_mode: host
+    stdin_open: true
+    tty: true
+
+    volumes:
+      - ../src:/workspace/src                    # Live code sync — edit on host, build inside
+      - ../docs:/workspace/docs                  # Documentation
+      - ../skills:/workspace/skills:ro           # Skills knowledge base (read-only)
+      - ../DevLogs:/workspace/DevLogs            # Developer logs
+      - ai_models:/workspace/src/porter_ai_assistant/models  # Persistent model storage
+      - ../src/porter_ai_assistant/data:/workspace/src/porter_ai_assistant/data:ro  # AI training data + knowledge base
+
+    environment:
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+      - ROS_DOMAIN_ID=11
+      - RCUTILS_COLORIZED_OUTPUT=1               # Coloured ROS 2 log output
+
+    # Uncomment for hardware testing with LIDAR:
+    # devices:
+    #   - /dev/ttyUSB0:/dev/ttyUSB0
+    # privileged: true
+    #
+    # For ESP32 devices (after udev rules installed):
+    # devices:
+    #   - /dev/esp32_motors:/dev/esp32_motors
+    #   - /dev/esp32_sensors:/dev/esp32_sensors
+    #   - /dev/ttyUSB0:/dev/ttyUSB0
+
+    command: ["bash"]
+
+  # ── Hardware testing (with LIDAR / serial devices) ────────────────────────
+  porter_robot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    container_name: porter_robot_hw
+    network_mode: host
+    stdin_open: true
+    tty: true
+    privileged: true
+
+    volumes:
+      - ../src:/workspace/src
+      - /dev:/dev                                # All device access for hardware testing
+
+    environment:
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+      - ROS_DOMAIN_ID=11
+      - RCUTILS_COLORIZED_OUTPUT=1
+
+    command: ["bash"]
+    profiles:
+      - hardware                                 # Only starts with: --profile hardware
+
+  # ── RViz2 visualization (remote PC) ──────────────────────────────────────
+  porter_viz:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    container_name: porter_viz
+    network_mode: host
+
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${XAUTHORITY:-~/.Xauthority}:/root/.Xauthority:ro
+
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+      - ROS_DOMAIN_ID=11
+
+    command: >
+      bash -c "source /workspace/install/setup.bash &&
+               ros2 launch ydlidar_driver ydlidar_rviz_launch.py"
+    profiles:
+      - viz                                      # Only starts with: --profile viz
+
+volumes:
+  ai_models:
+    name: porter_ai_models                       # Persistent GGUF model storage

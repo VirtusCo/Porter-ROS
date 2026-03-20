@@ -1,0 +1,174 @@
+{
+  "tools": [
+    {
+      "name": "get_directions",
+      "description": "Get walking directions from current location to a destination in the airport",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "destination": {"type": "string", "description": "Target location (gate, counter, facility)"},
+          "from_location": {"type": "string", "description": "Starting point (optional, defaults to current)"}
+        },
+        "required": ["destination"]
+      }
+    },
+    {
+      "name": "get_flight_status",
+      "description": "Check real-time flight status including gate, delays, and boarding time",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "flight_number": {"type": "string", "description": "IATA flight number (e.g. AI302, 6E123)"}
+        },
+        "required": ["flight_number"]
+      }
+    },
+    {
+      "name": "find_nearest",
+      "description": "Find the nearest airport facility of a given type",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "facility_type": {"type": "string", "enum": ["restroom", "restaurant", "cafe", "atm", "currency_exchange", "pharmacy", "charging_station", "prayer_room", "lounge", "information_desk", "medical_centre", "water_fountain", "elevator", "escalator", "shop", "duty_free", "luggage_storage", "smoking_area"]},
+          "accessible": {"type": "boolean", "description": "Filter for wheelchair-accessible facilities"}
+        },
+        "required": ["facility_type"]
+      }
+    },
+    {
+      "name": "weigh_luggage",
+      "description": "Activate Porter's built-in scale to weigh passenger luggage",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "num_bags": {"type": "integer", "description": "Number of bags to weigh"}
+        },
+        "required": ["num_bags"]
+      }
+    },
+    {
+      "name": "get_gate_info",
+      "description": "Get information about a specific gate including terminal, concourse, and amenities",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "gate_id": {"type": "string", "description": "Gate identifier (e.g. B12, C22, A5)"}
+        },
+        "required": ["gate_id"]
+      }
+    },
+    {
+      "name": "call_assistance",
+      "description": "Request human staff assistance for a passenger",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "assistance_type": {"type": "string", "enum": ["wheelchair", "medical", "lost_item", "language_interpreter", "unaccompanied_minor", "elderly_escort", "security", "airline_staff"]},
+          "location": {"type": "string", "description": "Current location of passenger"},
+          "priority": {"type": "string", "enum": ["low", "normal", "high", "emergency"]}
+        },
+        "required": ["assistance_type", "location"]
+      }
+    },
+    {
+      "name": "escort_passenger",
+      "description": "Set navigation to escort a passenger to their destination while carrying luggage",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "destination": {"type": "string", "description": "Where to take the passenger"},
+          "carry_luggage": {"type": "boolean", "description": "Whether to carry passenger's luggage"},
+          "pace": {"type": "string", "enum": ["normal", "slow", "fast"], "description": "Walking pace preference"}
+        },
+        "required": ["destination"]
+      }
+    },
+    {
+      "name": "show_map",
+      "description": "Display an interactive airport map on Porter's screen highlighting a specific area",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "area": {"type": "string", "description": "Area to display (terminal, concourse, level)"},
+          "highlight": {"type": "string", "description": "Specific location to highlight on the map"},
+          "show_route": {"type": "boolean", "description": "Show walking route from current location"}
+        },
+        "required": ["area"]
+      }
+    },
+    {
+      "name": "check_wait_time",
+      "description": "Check estimated wait time at a queue (security, immigration, check-in)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "queue_type": {"type": "string", "enum": ["security", "immigration", "check_in", "customs", "taxi", "lounge"]},
+          "terminal": {"type": "string", "description": "Terminal identifier"}
+        },
+        "required": ["queue_type"]
+      }
+    },
+    {
+      "name": "set_reminder",
+      "description": "Set a boarding reminder for the passenger",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "flight_number": {"type": "string", "description": "Flight to track"},
+          "reminder_minutes_before": {"type": "integer", "description": "Minutes before boarding to alert"}
+        },
+        "required": ["flight_number"]
+      }
+    },
+    {
+      "name": "get_airline_counter",
+      "description": "Find the check-in counter location for a specific airline",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "airline": {"type": "string", "description": "Airline name or IATA code"},
+          "service_type": {"type": "string", "enum": ["check_in", "baggage_drop", "customer_service", "ticketing", "lost_baggage"], "description": "Type of counter needed"}
+        },
+        "required": ["airline"]
+      }
+    },
+    {
+      "name": "get_transport_options",
+      "description": "Get ground transportation options from the airport to a destination",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "destination": {"type": "string", "description": "City destination or area"},
+          "transport_type": {"type": "string", "enum": ["taxi", "metro", "bus", "rideshare", "car_rental", "hotel_shuttle", "any"]}
+        },
+        "required": ["destination"]
+      }
+    },
+    {
+      "name": "translate_text",
+      "description": "Translate text to the passenger's preferred language",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "text": {"type": "string", "description": "Text to translate"},
+          "target_language": {"type": "string", "description": "Target language code (hi, ta, te, bn, kn, ml, fr, de, ja, zh, ar)"}
+        },
+        "required": ["text", "target_language"]
+      }
+    },
+    {
+      "name": "report_incident",
+      "description": "Report a safety or security incident to airport operations",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "incident_type": {"type": "string", "enum": ["suspicious_item", "medical_emergency", "theft", "lost_child", "spill_hazard", "equipment_malfunction", "fire_alarm", "unattended_baggage"]},
+          "location": {"type": "string", "description": "Location of the incident"},
+          "description": {"type": "string", "description": "Brief description of the incident"},
+          "severity": {"type": "string", "enum": ["low", "medium", "high", "critical"]}
+        },
+        "required": ["incident_type", "location", "severity"]
+      }
+    }
+  ]
+}

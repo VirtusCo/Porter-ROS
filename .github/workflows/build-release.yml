@@ -1,0 +1,528 @@
+# ════════════════════════════════════════════════════════════════════════════
+# Porter Robot — Build & Release Pipeline (Semver)
+# ════════════════════════════════════════════════════════════════════════════
+#
+# Runs after the verification pipeline passes on main/prototype.
+# Uses the version from porter_robot/VERSION for semver tags (v0.1.0, etc).
+#
+# Jobs:
+#   1. version              — Read VERSION, check if tag already exists
+#   2. build-ros2-docker    — Build prod Docker image tagged with semver
+#   3. build-esp32-firmware — Cross-compile ESP32 firmware
+#   4. build-flutter-gui    — Build Flutter Linux GUI application
+#   5. build-vscode-extension — Package Porter DevTools VS Code extension (.vsix)
+#   6. release              — Create GitHub Release with all artifacts
+#
+# ════════════════════════════════════════════════════════════════════════════
+
+name: Porter Build & Release
+
+on:
+  push:
+    branches: [main, prototype]
+  workflow_dispatch:            # Manual trigger for ad-hoc releases
+
+# Cancel in-progress runs on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write              # Needed for creating releases + tags
+
+env:
+  ZEPHYR_SDK_VERSION: "0.17.0"
+  ZEPHYR_VERSION: "v4.0.0"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────
+  # Job 1: Read version, decide release tag
+  # ────────────────────────────────────────────────────────────────────────
+  version:
+    name: Version
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      tag: ${{ steps.ver.outputs.tag }}
+      short_sha: ${{ steps.ver.outputs.short_sha }}
+      is_new_version: ${{ steps.ver.outputs.is_new_version }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0       # Full history for tag check
+
+      - name: Read VERSION and check tag
+        id: ver
+        run: |
+          VERSION="$(tr -d '[:space:]' < porter_robot/VERSION)"
+          TAG="v${VERSION}"
+          SHORT_SHA="${GITHUB_SHA::7}"
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+          # Check if this semver tag already exists
+          if git tag -l "${TAG}" | grep -q "${TAG}"; then
+            echo "Tag ${TAG} already exists — will use ${TAG}+${SHORT_SHA}"
+            echo "is_new_version=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "New version tag: ${TAG}"
+            echo "is_new_version=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "## Release: ${TAG} (${SHORT_SHA})" >> "$GITHUB_STEP_SUMMARY"
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Job 2: Build ROS 2 Production Docker Image
+  # ────────────────────────────────────────────────────────────────────────
+  build-ros2-docker:
+    name: Build ROS 2 Docker Image
+    runs-on: ubuntu-24.04
+    needs: version
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build production Docker image
+        working-directory: porter_robot
+        run: |
+          docker build \
+            -f docker/Dockerfile.prod \
+            -t porter-robot:${{ needs.version.outputs.version }} \
+            -t porter-robot:latest \
+            --label "org.opencontainers.image.version=${{ needs.version.outputs.version }}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            .
+
+      - name: Export Docker image as tarball
+        run: |
+          docker save \
+            porter-robot:${{ needs.version.outputs.version }} \
+            porter-robot:latest \
+            | gzip > porter-robot-${{ needs.version.outputs.version }}.tar.gz
+          ls -lh porter-robot-*.tar.gz
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: porter-robot-*.tar.gz
+          retention-days: 90
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Job 3: Build ESP32 Firmware (Zephyr + West)
+  # ────────────────────────────────────────────────────────────────────────
+  build-esp32-firmware:
+    name: Build ESP32 Firmware
+    runs-on: ubuntu-24.04
+    needs: version
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Zephyr system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            git cmake ninja-build gperf ccache dfu-util \
+            device-tree-compiler wget python3-dev python3-pip \
+            python3-venv python3-setuptools python3-wheel \
+            xz-utils file make gcc gcc-multilib g++-multilib \
+            libsdl2-dev libmagic1
+
+      - name: Set up Zephyr environment
+        run: |
+          python3 -m venv ~/zephyrproject/.venv
+          source ~/zephyrproject/.venv/bin/activate
+          pip install --upgrade pip wheel setuptools
+          pip install west
+          west init -m https://github.com/zephyrproject-rtos/zephyr \
+            --mr ${{ env.ZEPHYR_VERSION }} ~/zephyrproject
+          cd ~/zephyrproject
+          west update --narrow -o=--depth=1
+          pip install -r zephyr/scripts/requirements.txt
+
+      - name: Install Zephyr SDK (minimal + ESP32 toolchain)
+        run: |
+          cd /tmp
+          wget -q "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${{ env.ZEPHYR_SDK_VERSION }}/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}_linux-x86_64_minimal.tar.xz"
+          tar xf "zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}_linux-x86_64_minimal.tar.xz" -C ~/
+          cd ~/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}
+          ./setup.sh -h -c
+          cd /tmp
+          wget -q "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${{ env.ZEPHYR_SDK_VERSION }}/toolchain_linux-x86_64_xtensa-espressif_esp32_zephyr-elf.tar.xz"
+          tar xf toolchain_linux-x86_64_xtensa-espressif_esp32_zephyr-elf.tar.xz -C ~/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}/
+          rm -f toolchain_linux-x86_64_xtensa-espressif_esp32_zephyr-elf.tar.xz
+
+      - name: Cache Zephyr modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/zephyrproject/modules
+            ~/zephyrproject/bootloader
+          key: zephyr-${{ env.ZEPHYR_VERSION }}-modules-${{ hashFiles('porter_robot/esp32_firmware/**/prj.conf') }}
+          restore-keys: |
+            zephyr-${{ env.ZEPHYR_VERSION }}-modules-
+
+      - name: Build Motor Controller firmware
+        run: |
+          source ~/zephyrproject/.venv/bin/activate
+          export ZEPHYR_BASE=~/zephyrproject/zephyr
+          export ZEPHYR_SDK_INSTALL_DIR=~/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}
+          cd ~/zephyrproject
+          west build -p always -b esp32_devkitc_wroom \
+            $GITHUB_WORKSPACE/porter_robot/esp32_firmware/motor_controller
+          mkdir -p $GITHUB_WORKSPACE/esp32_artifacts
+          cp build/zephyr/zephyr.bin  $GITHUB_WORKSPACE/esp32_artifacts/motor_controller.bin
+          cp build/zephyr/zephyr.elf  $GITHUB_WORKSPACE/esp32_artifacts/motor_controller.elf
+
+      - name: Build Sensor Fusion firmware
+        run: |
+          source ~/zephyrproject/.venv/bin/activate
+          export ZEPHYR_BASE=~/zephyrproject/zephyr
+          export ZEPHYR_SDK_INSTALL_DIR=~/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}
+          cd ~/zephyrproject
+          west build -p always -b esp32_devkitc_wroom \
+            $GITHUB_WORKSPACE/porter_robot/esp32_firmware/sensor_fusion
+          cp build/zephyr/zephyr.bin  $GITHUB_WORKSPACE/esp32_artifacts/sensor_fusion.bin
+          cp build/zephyr/zephyr.elf  $GITHUB_WORKSPACE/esp32_artifacts/sensor_fusion.elf
+
+      - name: Generate checksums + build info
+        run: |
+          cd $GITHUB_WORKSPACE/esp32_artifacts
+          sha256sum *.bin *.elf > SHA256SUMS.txt
+
+          echo "version=${{ needs.version.outputs.version }}" > BUILD_INFO.txt
+          echo "commit=${GITHUB_SHA}" >> BUILD_INFO.txt
+          echo "branch=${GITHUB_REF_NAME}" >> BUILD_INFO.txt
+          echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> BUILD_INFO.txt
+          echo "zephyr=${{ env.ZEPHYR_VERSION }}" >> BUILD_INFO.txt
+          echo "zephyr_sdk=${{ env.ZEPHYR_SDK_VERSION }}" >> BUILD_INFO.txt
+          cat BUILD_INFO.txt
+          cat SHA256SUMS.txt
+
+      - name: Upload ESP32 firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: esp32-firmware
+          path: esp32_artifacts/
+          retention-days: 90
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Job 4: Build Flutter GUI (Linux x64)
+  # ────────────────────────────────────────────────────────────────────────
+  build-flutter-gui:
+    name: Build Flutter GUI
+    runs-on: ubuntu-24.04
+    needs: version
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build pkg-config libgtk-3-dev clang lld
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Verify and build
+        working-directory: porter_robot/src/porter_gui
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+          flutter build linux --release
+
+      - name: Package GUI bundle
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+          cd porter_robot/src/porter_gui/build/linux/x64/release
+          tar czf "${GITHUB_WORKSPACE}/porter-gui-linux-x64-${VERSION}.tar.gz" bundle/
+          ls -lh "${GITHUB_WORKSPACE}/porter-gui-linux-x64-${VERSION}.tar.gz"
+
+      - name: Upload Flutter GUI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-gui
+          path: porter-gui-linux-x64-*.tar.gz
+          retention-days: 90
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Job 5: Build VS Code Extension (.vsix)
+  # ────────────────────────────────────────────────────────────────────────
+  build-vscode-extension:
+    name: Build VS Code Extension
+    runs-on: ubuntu-24.04
+    needs: version
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: porter-vscode-extension/package-lock.json
+
+      - name: Install dependencies
+        working-directory: porter-vscode-extension
+        run: npm ci
+
+      - name: Compile TypeScript
+        working-directory: porter-vscode-extension
+        run: npm run compile
+
+      - name: Package VSIX
+        working-directory: porter-vscode-extension
+        run: npx vsce package --no-git-tag-version
+
+      - name: Rename VSIX with version
+        working-directory: porter-vscode-extension
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+          # vsce creates porter-devtools-{package.json version}.vsix
+          # Rename to include the release version for clarity
+          for f in *.vsix; do
+            mv "$f" "porter-devtools-${VERSION}.vsix"
+          done
+          ls -lh *.vsix
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-extension
+          path: porter-vscode-extension/porter-devtools-*.vsix
+          retention-days: 90
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Job 6: Create GitHub Release with semver tag
+  # ────────────────────────────────────────────────────────────────────────
+  release:
+    name: "Porter Robot v${{ needs.version.outputs.version }}"
+    runs-on: ubuntu-24.04
+    needs: [version, build-ros2-docker, build-esp32-firmware, build-flutter-gui, build-vscode-extension]
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 20      # Enough for changelog
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: release-assets/
+
+      - name: Download ESP32 firmware artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: esp32-firmware
+          path: release-assets/esp32/
+
+      - name: Download Flutter GUI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: flutter-gui
+          path: release-assets/
+
+      - name: Download VS Code Extension artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vscode-extension
+          path: release-assets/
+
+      - name: Generate release notes
+        id: release_info
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+          TAG="${{ needs.version.outputs.tag }}"
+          SHORT_SHA="${{ needs.version.outputs.short_sha }}"
+          BRANCH="${GITHUB_REF_NAME}"
+          TIMESTAMP="$(date -u '+%d %b %Y %H:%M UTC')"
+
+          if [[ "${{ needs.version.outputs.is_new_version }}" == "false" ]]; then
+            TAG="${TAG}+${SHORT_SHA}"
+          fi
+          echo "final_tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+          # Build categorized changelog from recent commits
+          CHANGELOG=""
+          while IFS= read -r line; do
+            hash="${line%% *}"
+            msg="${line#* }"
+            case "$msg" in
+              feat*)     icon="[feat]" ;;
+              fix*)      icon="[fix]" ;;
+              docs*)     icon="[docs]" ;;
+              test*)     icon="[test]" ;;
+              build*|ci*) icon="[build]" ;;
+              perf*)     icon="[perf]" ;;
+              refactor*) icon="[refactor]" ;;
+              chore*)    icon="[chore]" ;;
+              *)         icon="-" ;;
+            esac
+            CHANGELOG="${CHANGELOG}
+          - ${icon} ${msg} (\`${hash}\`)"
+          done < <(git log --oneline -15 --no-decorate 2>/dev/null)
+          [[ -z "$CHANGELOG" ]] && CHANGELOG="
+          - No changes recorded"
+
+          # Artifact sizes
+          GUI_SIZE="$(du -h release-assets/porter-gui-*.tar.gz 2>/dev/null | cut -f1 | head -1 || echo 'N/A')"
+          DOCKER_SIZE="$(du -h release-assets/porter-robot-*.tar.gz 2>/dev/null | cut -f1 | head -1 || echo 'N/A')"
+          MOTOR_SIZE="$(du -h release-assets/esp32/motor_controller.bin 2>/dev/null | cut -f1 || echo 'N/A')"
+          SENSOR_SIZE="$(du -h release-assets/esp32/sensor_fusion.bin 2>/dev/null | cut -f1 || echo 'N/A')"
+          VSIX_SIZE="$(du -h release-assets/porter-devtools-*.vsix 2>/dev/null | cut -f1 | head -1 || echo 'N/A')"
+
+          cat > release-assets/RELEASE_NOTES.md << EOF
+          # Porter Robot ${TAG}
+
+          > Autonomous airport porter — ROS 2 Jazzy · Zephyr RTOS · Flutter
+
+          | | |
+          |---|---|
+          | **Version** | \`${VERSION}\` |
+          | **Branch** | \`${BRANCH}\` |
+          | **Commit** | [\`${SHORT_SHA}\`](https://github.com/${{ github.repository }}/commit/${GITHUB_SHA}) |
+          | **Date** | ${TIMESTAMP} |
+          | **Zephyr** | ${ZEPHYR_VERSION} (SDK ${ZEPHYR_SDK_VERSION}) |
+
+          ---
+
+          ## Downloads
+
+          ### GUI Application
+
+          | File | Size | Platform |
+          |------|------|----------|
+          | \`porter-gui-linux-x64-${VERSION}.tar.gz\` | ${GUI_SIZE} | Linux x86_64 |
+
+          ### Docker Image
+
+          | File | Size | Description |
+          |------|------|-------------|
+          | \`porter-robot-${VERSION}.tar.gz\` | ${DOCKER_SIZE} | ROS 2 Jazzy production image |
+
+          ### ESP32 Firmware
+
+          | File | Size | Target |
+          |------|------|--------|
+          | \`motor_controller.bin\` | ${MOTOR_SIZE} | Motor controller · BTS7960 · differential drive |
+          | \`sensor_fusion.bin\` | ${SENSOR_SIZE} | Sensor fusion · ToF + Ultrasonic + Microwave |
+          | \`*.elf\` | — | Debug symbols for GDB |
+
+          ### VS Code Extension
+
+          | File | Size | Description |
+          |------|------|-------------|
+          | \`porter-devtools-${VERSION}.vsix\` | ${VSIX_SIZE} | Porter DevTools extension — install with \`code --install-extension porter-devtools-${VERSION}.vsix\` |
+
+          > Checksums in \`SHA256SUMS.txt\` · Build metadata in \`BUILD_INFO.txt\`
+
+          ---
+
+          ## Quick Start
+
+          <details>
+          <summary><strong>GUI Application</strong></summary>
+
+          \`\`\`bash
+          tar xzf porter-gui-linux-x64-${VERSION}.tar.gz
+          cd bundle && ./porter_gui
+          \`\`\`
+
+          </details>
+
+          <details>
+          <summary><strong>Docker (ROS 2 Stack)</strong></summary>
+
+          \`\`\`bash
+          docker load < porter-robot-${VERSION}.tar.gz
+          docker run --rm --net=host --privileged porter-robot:${VERSION}
+          \`\`\`
+
+          </details>
+
+          <details>
+          <summary><strong>ESP32 Flash</strong></summary>
+
+          \`\`\`bash
+          esptool.py --chip esp32 --port /dev/esp32_motors write_flash 0x1000 motor_controller.bin
+          esptool.py --chip esp32 --port /dev/esp32_sensors write_flash 0x1000 sensor_fusion.bin
+          \`\`\`
+
+          </details>
+
+          ---
+
+          ## What's Changed
+          ${CHANGELOG}
+
+          ---
+
+          <sub>Built by VirtusCo</sub>
+          EOF
+
+      - name: Delete existing release with same tag (if any)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.release_info.outputs.final_tag }}"
+          gh release delete "${TAG}" --yes 2>/dev/null || true
+          git push --delete origin "refs/tags/${TAG}" 2>/dev/null || true
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.release_info.outputs.final_tag }}"
+          VERSION="${{ needs.version.outputs.version }}"
+
+          # Collect all release files (GUI first, then Docker, then firmware)
+          FILES=()
+          for f in release-assets/porter-gui-*.tar.gz; do
+            [ -f "$f" ] && FILES+=("$f")
+          done
+          for f in release-assets/porter-robot-*.tar.gz; do
+            [ -f "$f" ] && FILES+=("$f")
+          done
+          for f in release-assets/esp32/*.bin release-assets/esp32/*.elf \
+                   release-assets/esp32/SHA256SUMS.txt release-assets/esp32/BUILD_INFO.txt; do
+            [ -f "$f" ] && FILES+=("$f")
+          done
+          for f in release-assets/porter-devtools-*.vsix; do
+            [ -f "$f" ] && FILES+=("$f")
+          done
+
+          # main → full release, prototype/feat → prerelease
+          PRERELEASE_FLAG=""
+          if [[ "${{ github.ref_name }}" != "main" ]]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
+          gh release create "${TAG}" \
+            --title "Porter Robot ${TAG}" \
+            --notes-file release-assets/RELEASE_NOTES.md \
+            ${PRERELEASE_FLAG} \
+            "${FILES[@]}"
+
+          echo "## Release Created: ${TAG}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Download: https://github.com/${{ github.repository }}/releases/tag/${TAG}" >> "$GITHUB_STEP_SUMMARY"

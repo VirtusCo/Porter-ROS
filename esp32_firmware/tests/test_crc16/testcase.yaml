@@ -1,0 +1,4 @@
+tests:
+  common.crc16:
+    tags: common crc16
+    platform_allow: native_sim

@@ -1,0 +1,57 @@
+# Porter Orchestrator Parameters
+# Configures state machine behaviour and health monitoring thresholds.
+#
+# Launch: ros2 launch porter_orchestrator orchestrator_launch.py
+# Override: ros2 param set /porter_state_machine boot_timeout_sec 60.0
+
+# ------------------------------------------------------------------
+# State Machine
+# ------------------------------------------------------------------
+porter_state_machine:
+  ros__parameters:
+    state_publish_rate_hz: 2.0    # Hz — how often /porter/state is published
+    boot_timeout_sec: 30.0        # seconds — max wait for driver health OK
+    boot_grace_sec: 8.0           # seconds — DDS discovery grace before checking
+    health_check_patience_sec: 10.0  # seconds — tolerate non-OK in HEALTH_CHECK
+    health_timeout_sec: 5.0       # seconds — stale health threshold in READY
+
+# ------------------------------------------------------------------
+# LIDAR Health Monitor
+# ------------------------------------------------------------------
+lidar_health_monitor:
+  ros__parameters:
+    monitor_rate_hz: 2.0          # Hz — health evaluation + publish rate
+    scan_timeout_sec: 3.0         # seconds — max gap between /scan messages
+    diag_timeout_sec: 5.0         # seconds — max gap between /diagnostics
+    driver_diag_name: "ydlidar_driver: LIDAR"   # Must match ydlidar_node
+    warn_consecutive_limit: 20    # consecutive WARNs before escalating to ERROR
+    error_escalation_sec: 10.0    # seconds — sustained error before action
+
+# ------------------------------------------------------------------
+# Tuning Guide
+# ------------------------------------------------------------------
+#
+# boot_grace_sec:
+#   DDS discovery takes 1-5 seconds. The state machine waits this long
+#   before checking health at all. If health becomes OK during grace,
+#   it proceeds immediately. On slow networks, increase to 10-15s.
+#
+# boot_timeout_sec:
+#   Total time allowed for driver to report OK health. Must be
+#   > boot_grace_sec. 30s is generous for typical LIDAR startup.
+#
+# health_check_patience_sec:
+#   After entering HEALTH_CHECK, how long to tolerate STALE/WARN
+#   before declaring ERROR. Allows transient startup glitches.
+#
+# scan_timeout_sec:
+#   At 10 Hz scan rate, 3s means ~30 missed scans before alarm.
+#   Decrease for tighter monitoring; increase for noisy serial lines.
+#
+# warn_consecutive_limit:
+#   Controls how tolerant the system is of transient anomalies.
+#   Lower = stricter (triggers recovery sooner).
+#   At 2 Hz monitor rate, 20 warns = ~10 seconds of degradation.
+#   Indoor LIDARs commonly have 30-40% invalid points, which is
+#   a WARN from the driver. This limit prevents permanent WARN
+#   from escalating to ERROR during normal indoor operation.

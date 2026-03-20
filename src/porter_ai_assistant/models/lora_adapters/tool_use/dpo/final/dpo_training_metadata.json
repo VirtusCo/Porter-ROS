@@ -1,0 +1,19 @@
+{
+  "adapter_type": "tool_use",
+  "training_type": "DPO",
+  "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "preference_data": "/home/antony-austin/Porter-ROS/porter_robot/src/porter_ai_assistant/data/tool_use/dpo_preferences_synthetic.jsonl",
+  "num_pairs": 1500,
+  "epochs": 3,
+  "batch_size": 1,
+  "grad_accum": 8,
+  "learning_rate": 5e-05,
+  "beta": 0.1,
+  "training_time_min": 45.3,
+  "eval_loss": 0.0,
+  "eval_rewards_chosen": 0,
+  "eval_rewards_rejected": 0,
+  "eval_rewards_margins": 0,
+  "gpu": "NVIDIA GeForce RTX 5070 Laptop GPU",
+  "vram_gb": 8.1
+}

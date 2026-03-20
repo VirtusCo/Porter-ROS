@@ -1,0 +1,48 @@
+{
+  "conv_sft": {
+    "model": "porter-conversational-Qwen2.5-1.5B-Instruct-Q4_K_M.gguf",
+    "n_runs": 10,
+    "avg_latency_ms": 1223,
+    "p50_latency_ms": 1150,
+    "p95_latency_ms": 1939,
+    "min_latency_ms": 663,
+    "max_latency_ms": 1939,
+    "pct_under_2s": 100.0,
+    "avg_tok_per_sec": 41.7
+  },
+  "conv_dpo": {
+    "model": "porter-conversational-dpo-Qwen2.5-1.5B-Instruct-Q4_K_M.gguf",
+    "n_runs": 10,
+    "avg_latency_ms": 1172,
+    "p50_latency_ms": 1063,
+    "p95_latency_ms": 1949,
+    "min_latency_ms": 817,
+    "max_latency_ms": 1949,
+    "pct_under_2s": 100.0,
+    "avg_tok_per_sec": 42.7
+  },
+  "tool_sft": {
+    "model": "porter-tool_use-Qwen2.5-1.5B-Instruct-Q4_K_M.gguf",
+    "n_runs": 10,
+    "avg_latency_ms": 680,
+    "p50_latency_ms": 728,
+    "p95_latency_ms": 925,
+    "min_latency_ms": 418,
+    "max_latency_ms": 925,
+    "pct_under_2s": 100.0,
+    "avg_tok_per_sec": 41.5,
+    "tool_call_rate": 100.0
+  },
+  "tool_dpo": {
+    "model": "porter-tool_use-dpo-Qwen2.5-1.5B-Instruct-Q4_K_M.gguf",
+    "n_runs": 10,
+    "avg_latency_ms": 724,
+    "p50_latency_ms": 790,
+    "p95_latency_ms": 1093,
+    "min_latency_ms": 377,
+    "max_latency_ms": 1093,
+    "pct_under_2s": 100.0,
+    "avg_tok_per_sec": 41.4,
+    "tool_call_rate": 100.0
+  }
+}

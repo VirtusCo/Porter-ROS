@@ -1,0 +1,67 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Porter LIDAR Processor Parameters
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Company-internal scan processing for Porter Robot (VirtusCo).
+# Subscribes to /scan → applies filter chain → publishes /scan/processed.
+#
+# All filters can be toggled independently. The pipeline order is fixed:
+#   range_clamp → outlier → median → smoothing → roi → downsample
+#
+# Tuning guide:
+#   - For airport environments: enable range_clamp + outlier + median
+#   - For noisy environments: add smoothing
+#   - For RPi performance: enable downsample (factor=2)
+#   - For forward-only navigation: enable roi (-90° to +90°)
+# ═══════════════════════════════════════════════════════════════════════════
+
+lidar_processor:
+  ros__parameters:
+    # Master switch — disable to pass raw scans through unchanged
+    filters_enabled: true
+
+    # ── Range Clamping ────────────────────────────────────────────────────
+    # Remove physically impossible or out-of-spec range values.
+    range_clamp:
+      enabled: true
+      min_range: 0.05                   # metres — below this is noise
+      max_range: 12.0                   # metres — X4 Pro rated range
+
+    # ── Outlier Rejection ─────────────────────────────────────────────────
+    # MAD-based (Median Absolute Deviation) outlier removal.
+    # Removes single-point spikes that deviate significantly from neighbours.
+    outlier:
+      enabled: true
+      kernel_size: 5                    # sliding window width (odd, >= 3)
+      threshold: 1.5                    # rejection threshold (MAD multiples)
+
+    # ── Median Filter ─────────────────────────────────────────────────────
+    # Sliding-window median — good for salt-and-pepper noise.
+    # Preserves edges better than mean filtering.
+    median:
+      enabled: true
+      kernel_size: 5                    # sliding window width (odd, >= 3)
+
+    # ── Smoothing (Moving Average) ────────────────────────────────────────
+    # Gentle noise reduction. Disabled by default to avoid blurring edges.
+    # Enable for very noisy environments or lower-quality LIDARs.
+    smoothing:
+      enabled: false
+      kernel_size: 3                    # sliding window width (odd, >= 3)
+
+    # ── ROI Crop ──────────────────────────────────────────────────────────
+    # Restrict scan to angular Region of Interest.
+    # Useful for forward-only navigation or ignoring self-reflections.
+    # Ranges outside the ROI are set to NaN.
+    roi:
+      enabled: false
+      angle_min_deg: -90.0              # degrees — left boundary
+      angle_max_deg: 90.0               # degrees — right boundary
+
+    # ── Downsample ────────────────────────────────────────────────────────
+    # Reduce point density by keeping every Nth point.
+    # Useful on resource-constrained platforms (RPi 4/5).
+    # Non-selected points are set to NaN (preserves geometry).
+    downsample:
+      enabled: false
+      factor: 2                         # keep every Nth point

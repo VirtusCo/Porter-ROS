@@ -1,0 +1,10 @@
+# Porter Robot — Motor Controller Application Kconfig
+#
+# Sources the shared common library Kconfig (transport layer)
+# then imports all Zephyr base symbols.
+
+mainmenu "Porter Motor Controller"
+
+rsource "../common/Kconfig"
+
+source "Kconfig.zephyr"

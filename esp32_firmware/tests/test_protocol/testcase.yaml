@@ -1,0 +1,4 @@
+tests:
+  common.protocol:
+    tags: common protocol
+    platform_allow: native_sim

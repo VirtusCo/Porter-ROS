@@ -1,0 +1,24 @@
+{
+  "adapter_name": "tool_use",
+  "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "lora_r": 16,
+  "lora_alpha": 32,
+  "lora_target_modules": [
+    "q_proj",
+    "k_proj",
+    "v_proj",
+    "o_proj",
+    "gate_proj",
+    "up_proj",
+    "down_proj"
+  ],
+  "num_train_epochs": 3,
+  "learning_rate": 0.0002,
+  "max_seq_length": 1024,
+  "train_examples": 3000,
+  "eval_examples": 600,
+  "training_time_minutes": 76.4,
+  "gpu": "NVIDIA GeForce RTX 5070 Laptop GPU",
+  "final_train_loss": 0.12693618383285002,
+  "best_eval_loss": 0.05131412670016289
+}

@@ -1,0 +1,5 @@
+# Request full robot status snapshot
+string robot_id                  # "" = this robot
+---
+virtus_msgs/RobotStatus status   # Full status snapshot
+bool   found                     # True if robot was found

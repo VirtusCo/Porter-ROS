@@ -1,0 +1,23 @@
+# Virtus Observability Stack (VOS) configuration
+# Override these parameters via launch arguments or parameter server.
+
+log_bridge:
+  ros__parameters:
+    robot_id: "porter-001"
+    log_dir: "/opt/virtus/logs"
+    retention_days: 30
+
+metrics_emitter:
+  ros__parameters:
+    robot_id: "porter-001"
+    metrics_dir: "/opt/virtus/metrics"
+    retention_days: 30
+    publish_rate_hz: 1.0
+
+event_journal:
+  ros__parameters:
+    robot_id: "porter-001"
+    events_dir: "/opt/virtus/events"
+    incidents_dir: "/opt/virtus/incidents"
+    buffer_seconds: 60
+    buffer_max_events: 600

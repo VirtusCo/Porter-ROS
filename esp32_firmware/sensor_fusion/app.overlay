@@ -1,0 +1,65 @@
+/* Porter Robot — Sensor Fusion Devicetree Overlay
+ * Board: ESP32-DevKitC (WROOM)
+ *
+ * Transport: Hardware UART2 via external USB-UART bridge (CP2102/CH340)
+ *   ESP32 UART2 TX (GPIO17) → CP2102 RX → USB → RPi /dev/ttyUSB*
+ *   ESP32 UART2 RX (GPIO16) → CP2102 TX → USB → RPi /dev/ttyUSB*
+ *
+ * Console: UART0 (GPIO1 TX / GPIO3 RX) — debug output via built-in USB
+ *
+ * Sensors:
+ *   I2C0: VL53L0x ToF sensor (addr 0x29), SDA=GPIO21, SCL=GPIO22
+ *   GPIO4:  Ultrasonic TRIG (output)
+ *   GPIO5:  Ultrasonic ECHO (input, interrupt)
+ *   ADC CH6 (GPIO34): Microwave motion detector analog output
+ *
+ * For ESP32-S2/S3 with native USB CDC ACM, replace UART2 section with:
+ *   &zephyr_udc0 { cdc_acm_uart0: cdc_acm_uart0 { compatible = "zephyr,cdc-acm-uart"; }; };
+ *   / { aliases { protocol-uart = &cdc_acm_uart0; }; };
+ *
+ * TODO: Update pin assignments once PCB schematic is finalized
+ */
+
+/* Hardware UART2 for protocol communication with RPi */
+&uart2 {
+    status = "okay";
+    current-speed = <115200>;
+};
+
+/ {
+    chosen {
+        /* zephyr,console stays on UART0 for debug output */
+    };
+
+    aliases {
+        protocol-uart = &uart2;
+    };
+
+    /* Ultrasonic sensor GPIO pins */
+    ultrasonic_pins {
+        compatible = "gpio-leds";
+        us_trig: us_trig {
+            gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>;
+            label = "Ultrasonic TRIG";
+        };
+    };
+
+    ultrasonic_echo_pins {
+        compatible = "gpio-keys";
+        us_echo: us_echo {
+            gpios = <&gpio0 5 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
+            label = "Ultrasonic ECHO";
+        };
+    };
+};
+
+/* I2C bus for ToF sensors (VL53L0x at 0x29) */
+&i2c0 {
+    status = "okay";
+    clock-frequency = <I2C_BITRATE_FAST>;
+};
+
+/* ADC1 for microwave sensor analog input (GPIO34 = ADC1_CH6) */
+&adc0 {
+    status = "okay";
+};

@@ -1,0 +1,145 @@
+{
+  "model": "porter-conversational-Qwen2.5-1.5B-Instruct-Q4_K_M.gguf",
+  "model_size_mb": 940.4,
+  "lora": null,
+  "lora_size_mb": null,
+  "system": {
+    "platform": "Linux-6.17.0-14-generic-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "architecture": "x86_64",
+    "python_version": "3.12.3",
+    "cpu_count": 32,
+    "total_ram_mb": 31294,
+    "available_ram_mb": 25262
+  },
+  "config": {
+    "n_runs": 10,
+    "max_tokens": 256,
+    "n_ctx": 2048,
+    "n_threads": 4,
+    "temperature": 0.7
+  },
+  "load_time_sec": 0.59,
+  "warmup_time_sec": 0.88,
+  "memory": {
+    "before_load_mb": 42.1,
+    "after_load_mb": 1669.2,
+    "after_warmup_mb": 1678.3,
+    "peak_mb": 1678.3,
+    "model_footprint_mb": 1627.1
+  },
+  "latency_ms": {
+    "min": 1027.5,
+    "max": 2193.0,
+    "mean": 1435.5,
+    "median": 1211.0,
+    "stdev": 426.2,
+    "p95": 2193.0,
+    "p99": 2193.0
+  },
+  "throughput": {
+    "mean_tokens_per_sec": 38.8,
+    "median_tokens_per_sec": 38.9
+  },
+  "completion_tokens": {
+    "mean": 56,
+    "median": 47.0
+  },
+  "pass_rate": {
+    "under_2s": 80.0,
+    "under_3s": 100.0,
+    "under_5s": 100.0
+  },
+  "runs": [
+    {
+      "run": 1,
+      "prompt": "Where is Gate B12?",
+      "latency_ms": 1027.5,
+      "prompt_tokens": 56,
+      "completion_tokens": 38,
+      "tokens_per_sec": 37.0,
+      "reply_length": 142
+    },
+    {
+      "run": 2,
+      "prompt": "What time does my flight board?",
+      "latency_ms": 1154.9,
+      "prompt_tokens": 56,
+      "completion_tokens": 45,
+      "tokens_per_sec": 39.0,
+      "reply_length": 199
+    },
+    {
+      "run": 3,
+      "prompt": "Where can I find an ATM?",
+      "latency_ms": 1117.3,
+      "prompt_tokens": 56,
+      "completion_tokens": 43,
+      "tokens_per_sec": 38.5,
+      "reply_length": 159
+    },
+    {
+      "run": 4,
+      "prompt": "Is there free WiFi?",
+      "latency_ms": 1176.9,
+      "prompt_tokens": 54,
+      "completion_tokens": 46,
+      "tokens_per_sec": 39.1,
+      "reply_length": 193
+    },
+    {
+      "run": 5,
+      "prompt": "Where is the nearest restroom?",
+      "latency_ms": 1073.4,
+      "prompt_tokens": 55,
+      "completion_tokens": 40,
+      "tokens_per_sec": 37.3,
+      "reply_length": 159
+    },
+    {
+      "run": 6,
+      "prompt": "I need to get to Terminal 2 from here. Can you help me find ...",
+      "latency_ms": 1245.1,
+      "prompt_tokens": 68,
+      "completion_tokens": 48,
+      "tokens_per_sec": 38.6,
+      "reply_length": 197
+    },
+    {
+      "run": 7,
+      "prompt": "My flight AI-302 to Mumbai has been delayed. What should I d...",
+      "latency_ms": 2193.0,
+      "prompt_tokens": 67,
+      "completion_tokens": 88,
+      "tokens_per_sec": 40.1,
+      "reply_length": 371
+    },
+    {
+      "run": 8,
+      "prompt": "Can you recommend a good vegetarian restaurant in the airpor...",
+      "latency_ms": 1551.0,
+      "prompt_tokens": 60,
+      "completion_tokens": 61,
+      "tokens_per_sec": 39.3,
+      "reply_length": 278
+    },
+    {
+      "run": 9,
+      "prompt": "I have a connecting flight in 2 hours. Will I make it throug...",
+      "latency_ms": 1806.6,
+      "prompt_tokens": 66,
+      "completion_tokens": 70,
+      "tokens_per_sec": 38.7,
+      "reply_length": 296
+    },
+    {
+      "run": 10,
+      "prompt": "I lost my luggage. Where do I report it?",
+      "latency_ms": 2009.3,
+      "prompt_tokens": 60,
+      "completion_tokens": 81,
+      "tokens_per_sec": 40.3,
+      "reply_length": 334
+    }
+  ]
+}

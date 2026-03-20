@@ -1,0 +1,20 @@
+# Long-running escort task
+# Goal
+string passenger_id              # Passenger identifier
+string destination_id            # Destination semantic ID
+string session_id                # Session for logging
+bool   carry_luggage             # True if luggage loaded on robot
+---
+# Result
+bool   success                   # True if escort completed
+string failure_reason            # Empty if success
+float32 total_distance_m         # Total distance traveled (meters)
+float32 total_time_s             # Total time elapsed (seconds)
+string final_state               # FSM state at completion
+---
+# Feedback
+float32 progress_pct             # Progress 0.0-100.0 percent
+string  current_phase            # "LOADING", "NAVIGATING", "ARRIVED", "WAITING_PASSENGER"
+float32 distance_remaining_m     # Remaining distance (meters)
+float32 eta_s                    # Estimated time remaining (seconds)
+geometry_msgs/Pose2D current_pose  # Current robot position

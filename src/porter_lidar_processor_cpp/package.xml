@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>porter_lidar_processor_cpp</name>
+  <version>0.1.0</version>
+  <description>
+    High-performance C++17 LIDAR scan processor for Porter Robot.
+    Subscribes to /scan, applies a configurable 6-stage filter pipeline
+    (range clamp, MAD outlier rejection, median, exponential smoothing,
+    ROI crop, downsample), publishes /scan/processed and /diagnostics.
+    Drop-in replacement for the Python porter_lidar_processor package.
+  </description>
+  <maintainer email="antony@virtusco.in">Antony Austin</maintainer>
+  <license>Proprietary</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>diagnostic_msgs</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

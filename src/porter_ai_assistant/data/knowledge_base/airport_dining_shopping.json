@@ -1,0 +1,44 @@
+[
+  {
+    "id": "food_food_court",
+    "category": "dining",
+    "title": "Main Food Court",
+    "content": "Main food court on Level 2, terminal centre, 3 minutes from most check-in areas. 15+ restaurants: Indian (Punjabi by Nature, Dosa Factory, Haldiram's), Fast food (McDonald's, Burger King, Subway), Asian (Wok Express, Sushi Counter), Cafés (Starbucks, Costa Coffee). Vegetarian options at most outlets — look for green dot symbol. Jain food (no onion/garlic) at Haldiram's. Halal options available. Prices 20-30% higher after security.",
+    "keywords": ["food", "eat", "restaurant", "food court", "hungry", "dining", "meal", "lunch", "dinner", "breakfast"]
+  },
+  {
+    "id": "food_coffee",
+    "category": "dining",
+    "title": "Coffee Shops",
+    "content": "Coffee shops: Starbucks 50m past bookshop (before and after security). Costa Coffee near Gate B8. Blue Tokai Coffee on Level 2 near domestic check-in (specialty Indian coffee). Café Coffee Day near arrivals exit on Level 0. Most cafés open 5:00 AM to 11:00 PM. After-security prices typically 20-30% higher. All serve hot and cold beverages, pastries, light meals.",
+    "keywords": ["coffee", "café", "tea", "starbucks", "costa", "cappuccino", "latte", "espresso", "hot drink", "beverage"]
+  },
+  {
+    "id": "food_vegetarian",
+    "category": "dining",
+    "title": "Vegetarian and Vegan Options",
+    "content": "Vegetarian options widely available: Haldiram's (fully vegetarian Indian snacks/meals, food court), Dosa Factory (South Indian vegetarian, food court), Subway (vegetarian subs), Starbucks/Costa (vegetarian sandwiches/wraps). Most restaurants mark vegetarian items with green dot. Jain food (no onion/garlic) at Haldiram's and select outlets. Vegan options at Subway, Wok Express, and some cafés — ask staff for vegan menu. Gluten-free options limited but available at select restaurants.",
+    "keywords": ["vegetarian", "vegan", "veggie", "no meat", "jain", "halal", "kosher", "gluten free", "dietary", "plant based"]
+  },
+  {
+    "id": "food_water",
+    "category": "dining",
+    "title": "Water and Drinks",
+    "content": "After security: Bottled water at WHSmith, Relay convenience stores near gates (₹40-60). Free water bottle refill stations near Gates A10, B15, and C8 — look for blue tap icon signs. Any café or restaurant provides water with food orders. Refill stations reduce plastic waste — bring reusable bottle. Juice bars and smoothie counters in food court area.",
+    "keywords": ["water", "drink", "thirsty", "bottle", "refill", "juice", "beverage"]
+  },
+  {
+    "id": "shopping_duty_free",
+    "category": "shopping",
+    "title": "Duty-Free Shopping",
+    "content": "Duty-free zone after security/immigration for international departures, between Gates C1 and C15. Categories: liquor and tobacco, perfumes and cosmetics, electronics, chocolates and gourmet food, designer accessories. Only for international passengers. Quantity limits depend on destination country customs. Prices significantly lower than retail for premium brands. Accepts multiple currencies and cards. Can pre-order online for collection at departure.",
+    "keywords": ["duty free", "duty-free", "shopping", "shop", "buy", "store", "souvenirs", "gift", "perfume", "alcohol", "liquor", "chocolate"]
+  },
+  {
+    "id": "shopping_general",
+    "category": "shopping",
+    "title": "General Shopping",
+    "content": "Shopping options: WHSmith (books, magazines, travel accessories — multiple locations before and after security). Relay (convenience items, snacks — near gates). The Gift Gallery (local handicrafts, souvenirs — Level 2 near domestic check-in). IndiGifts (traditional Indian items — after international security near Gate C12). Crossword (books, wider selection — Level 2 near food court). Prices inside airport higher than city — 20-40% markup for convenience.",
+    "keywords": ["shop", "store", "buy", "book", "bookshop", "souvenir", "gift", "present", "magazine", "newspaper"]
+  }
+]

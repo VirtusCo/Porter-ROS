@@ -1,0 +1,80 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# YDLIDAR Driver Parameters — Porter Robot
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Model-agnostic configuration. Change these parameters to support
+# different YDLIDAR models without modifying code.
+#
+# Default profile: YDLIDAR X4 Pro 360° (Triangle, baudrate 128000, single-channel)
+#
+# CRITICAL: singleChannel must match the LIDAR model's protocol!
+#   Single-channel LIDARs (one-way comms): X4, X4 Pro, X2, X2L, S2, S4, S4B
+#   Dual-channel LIDARs (two-way comms): G4, G4 Pro, G6, G7, F4 Pro, TG series
+#   Setting this wrong causes ALL serial commands to time out.
+#
+# Other profiles (uncomment/modify as needed):
+#   G4:       baudrate=230400, lidar_type=1, singleChannel=false, intensity=true
+#   TG series: baudrate=512000, lidar_type=0 (TYPE_TOF), singleChannel=false
+#   X2/X2L:   baudrate=115200, lidar_type=1, singleChannel=true
+# ═══════════════════════════════════════════════════════════════════════════
+
+ydlidar_node:
+  ros__parameters:
+    # ── Connection ────────────────────────────────────────────────────────
+    port: "/dev/ttyUSB0"                # Serial device path
+    baudrate: 128000                    # baud — 128000 for X4 Pro
+    frame_id: "laser_frame"             # TF frame for LaserScan header
+
+    # ── Scan Geometry ─────────────────────────────────────────────────────
+    frequency: 10.0                     # Hz — target scan frequency
+    angle_min: -180.0                   # degrees — minimum scan angle
+    angle_max: 180.0                    # degrees — maximum scan angle
+    min_range: 0.01                     # metres — minimum valid range
+    max_range: 12.0                     # metres — X4 Pro rated 10m, set 12 for margin
+    samp_rate: 5                        # kHz — sample rate (model dependent)
+
+    # ── Scan Behaviour ────────────────────────────────────────────────────
+    resolution_fixed: false             # Fixed angular resolution mode
+    singleChannel: true                 # Single-channel (one-way) protocol — X4 Pro, S2, S4, X2
+    auto_reconnect: true                # Auto-reconnect on disconnect
+    isToFLidar: false                   # Time-of-Flight mode (TG series)
+    ignore_array: ""                    # Angle ignore pairs, e.g. "-1,1,170,180"
+
+    # ── Model Type (model-agnostic selection) ─────────────────────────────
+    # lidar_type: 0=TYPE_TOF, 1=TYPE_TRIANGLE, 3=TYPE_GS
+    # device_type: 0=SERIAL, 1=TCP, 2=UDP
+    lidar_type: 1                       # TYPE_TRIANGLE for X4 Pro
+    device_type: 0                      # YDLIDAR_TYPE_SERIAL
+
+    # ── Intensity ─────────────────────────────────────────────────────────
+    intensity: false                    # X4 Pro does not have intensity
+    intensity_bit: 10                   # Bit count for intensity data
+
+    # ── Motor Control ─────────────────────────────────────────────────────
+    support_motor_dtr_ctrl: true        # DTR pin controls motor
+    support_heartbeat: false            # Heartbeat protocol support
+
+    # ── Noise Filters ─────────────────────────────────────────────────────
+    glass_noise: false                  # Glass noise filter
+    sun_noise: false                    # Sunlight noise filter
+
+    # ── Health Monitoring ─────────────────────────────────────────────────
+    abnormal_check_count: 4             # SDK abnormal check threshold
+    health_window_size: 50              # Sliding window for health stats
+    health_freq_warn_ratio: 0.8         # Warn if actual/expected freq < 80%
+    health_freq_error_ratio: 0.5        # Error if < 50%
+    health_invalid_warn_ratio: 0.5      # Warn if > 50% invalid points (33% is normal indoors)
+    health_invalid_error_ratio: 0.8     # Error if > 80%
+    health_consecutive_failure_limit: 5 # Error after N consecutive failures
+    health_reconnect_threshold: 10      # Reconnect after N consecutive failures
+
+    # health_expected_freq: The *actual* scan delivery rate the health
+    # monitor should expect.  Set this to 0 to auto-use the 'frequency'
+    # parameter.  On S2PRO the motor targets 10 Hz but the SDK delivers
+    # scans at ~4 Hz (5K samp_rate / 1300 pts per revolution).  Without
+    # this override the health monitor would flag every scan as ERROR
+    # because 3.8 / 10.0 = 0.38 < freq_error_ratio (0.5).
+    health_expected_freq: 4.0           # Hz — actual scan delivery rate
+
+    # ── Retry Settings ────────────────────────────────────────────────────
+    init_max_retries: 3                 # Max init attempts with exp. backoff

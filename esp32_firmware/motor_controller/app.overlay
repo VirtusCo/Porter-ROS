@@ -1,0 +1,75 @@
+/* Porter Robot — Motor Controller Devicetree Overlay
+ * Board: ESP32-DevKitC (WROOM)
+ *
+ * Transport: Hardware UART2 via external USB-UART bridge (CP2102/CH340)
+ *   ESP32 UART2 TX (GPIO17) → CP2102 RX → USB → RPi /dev/ttyUSB*
+ *   ESP32 UART2 RX (GPIO16) → CP2102 TX → USB → RPi /dev/ttyUSB*
+ *
+ * Console: UART0 (GPIO1 TX / GPIO3 RX) — debug output via built-in USB
+ *
+ * Motor Driver: 2× BTS7960 dual H-bridge
+ *   Motor L: RPWM=GPIO18, LPWM=GPIO19, EN=GPIO21
+ *   Motor R: RPWM=GPIO22, LPWM=GPIO23, EN=GPIO25
+ *
+ * Lift Mechanism: GPIO26 (up/down), GPIO27 (limit switch)
+ *
+ * For ESP32-S2/S3 with native USB CDC ACM, replace transport section with:
+ *   &zephyr_udc0 { cdc_acm_uart0: cdc_acm_uart0 { compatible = "zephyr,cdc-acm-uart"; }; };
+ *   / { aliases { protocol-uart = &cdc_acm_uart0; }; };
+ *
+ * NOTE: Pin assignments are provisional — update once PCB schematic is finalized
+ */
+
+/* Hardware UART2 for protocol communication with RPi */
+&uart2 {
+    status = "okay";
+    current-speed = <115200>;
+};
+
+/* LEDC PWM for motor speed control (4 channels for 2 motors × 2 directions) */
+&pinctrl {
+    ledc0_default: ledc0_default {
+        group1 {
+            pinmux = <LEDC_CH0_GPIO18>,    /* Motor L RPWM (forward) */
+                     <LEDC_CH1_GPIO19>,    /* Motor L LPWM (reverse) */
+                     <LEDC_CH2_GPIO22>,    /* Motor R RPWM (forward) */
+                     <LEDC_CH3_GPIO23>;    /* Motor R LPWM (reverse) */
+            output-enable;
+        };
+    };
+};
+
+&ledc0 {
+    status = "okay";
+    pinctrl-0 = <&ledc0_default>;
+    pinctrl-names = "default";
+};
+
+/ {
+    chosen {
+        /* zephyr,console stays on UART0 for debug output */
+    };
+
+    aliases {
+        protocol-uart = &uart2;
+        pwm-motors = &ledc0;
+    };
+
+    /* Motor enable pins and lift control GPIO */
+    motor_gpios {
+        compatible = "gpio-leds";
+
+        motor_l_en: motor_l_en {
+            gpios = <&gpio0 21 GPIO_ACTIVE_HIGH>;
+            label = "Motor L Enable";
+        };
+        motor_r_en: motor_r_en {
+            gpios = <&gpio0 25 GPIO_ACTIVE_HIGH>;
+            label = "Motor R Enable";
+        };
+        lift_ctrl: lift_ctrl {
+            gpios = <&gpio0 26 GPIO_ACTIVE_HIGH>;
+            label = "Lift Control";
+        };
+    };
+};

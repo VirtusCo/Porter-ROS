@@ -1,0 +1,58 @@
+[
+  {
+    "id": "terminal_1_overview",
+    "category": "terminals",
+    "title": "Terminal 1 — Domestic Departures",
+    "content": "Terminal 1 handles domestic departures. Gates A1 through A30. Check-in counters: Rows A through D on Level 2. IndiGo at Row B (Counters B1-B15), Air India at Row C (Counters C1-C10), SpiceJet at Row A (Counters A1-A8), Vistara at Row D (Counters D1-D8). Self-service kiosks near entrance. Security checkpoint at centre of Level 2. Food court on Level 2 centre. Domestic arrivals on Level 0 with baggage carousels 1-8.",
+    "keywords": ["terminal 1", "domestic", "gate a", "indigo", "spicejet", "vistara", "air india domestic"]
+  },
+  {
+    "id": "terminal_2_overview",
+    "category": "terminals",
+    "title": "Terminal 2 — Domestic and Regional",
+    "content": "Terminal 2 handles domestic and regional flights. Gates B1 through B25. Check-in counters: Rows E through G on Level 2. GoAir at Row E, AirAsia India at Row F. Budget carriers primarily operate from this terminal. Connected to Terminal 1 via walkway on Level 2 (5-minute walk) and free inter-terminal shuttle from Level 0 (runs every 10 minutes). Food court smaller than Terminal 1 but has Haldiram's and McDonald's.",
+    "keywords": ["terminal 2", "gate b", "goair", "airasia", "regional", "budget airline"]
+  },
+  {
+    "id": "terminal_3_overview",
+    "category": "terminals",
+    "title": "Terminal 3 — International Departures",
+    "content": "Terminal 3 handles international departures and arrivals. Gates C1 through C30, Gates D1 through D20, Gates E1 through E15. Check-in counters: Rows F through K. Emirates at Row F (F1-F12), Singapore Airlines at Row G, Lufthansa at Row H, British Airways at Row I. Duty-free shopping zone between Gates C1-C15. Immigration and passport control between check-in and gates. Transfer security for connecting passengers. Allow 3 hours before international flights.",
+    "keywords": ["terminal 3", "international", "gate c", "gate d", "gate e", "emirates", "singapore airlines", "lufthansa", "british airways", "passport", "immigration", "duty free"]
+  },
+  {
+    "id": "terminal_transfer",
+    "category": "terminals",
+    "title": "Inter-Terminal Transfer",
+    "content": "Transfer between terminals: Inter-terminal shuttle train on Level 1, runs every 3-5 minutes, journey takes 5 minutes between terminals. Free for all passengers. Sky bridge on Level 2 connects Terminal 1 and 2 (5-minute walk). For Terminal 3, shuttle is recommended. Transfer security lane available for connecting passengers (typically faster than regular security). Allow 45-60 minutes for international-to-domestic connections.",
+    "keywords": ["transfer", "connection", "connecting flight", "shuttle", "inter-terminal", "sky bridge", "transit", "layover", "stopover"]
+  },
+  {
+    "id": "gates_terminal_1",
+    "category": "gates",
+    "title": "Terminal 1 Gate Locations (A1-A30)",
+    "content": "Terminal 1 Gates: A1-A10 near security exit (2-5 min walk from check-in). A11-A20 central concourse (5-8 min walk). A21-A30 far end of terminal (8-12 min walk, moving walkway available from A18). Nearest amenities per section: A1-A10 has Starbucks, charging, restrooms. A11-A20 has food court, prayer room near A15, charging. A21-A30 has Costa Coffee, restrooms near A25, charging stations.",
+    "keywords": ["gate a", "terminal 1 gate", "gate a1", "gate a5", "gate a10", "gate a15", "gate a20", "gate a25", "gate a30"]
+  },
+  {
+    "id": "gates_terminal_2",
+    "category": "gates",
+    "title": "Terminal 2 Gate Locations (B1-B25)",
+    "content": "Terminal 2 Gates: B1-B10 near security exit (2-4 min walk). B11-B20 mid-concourse (5-7 min walk). B21-B25 far end (7-10 min walk). Nearest amenities: B1-B10 has WHSmith, restrooms, charging. B8 has Costa Coffee. B11-B20 has snack bar, restrooms near B12, Plaza Premium Lounge near B10 on Level 3. B21-B25 has vending machines, restrooms near B20.",
+    "keywords": ["gate b", "terminal 2 gate", "gate b1", "gate b5", "gate b8", "gate b10", "gate b12", "gate b15", "gate b20", "gate b25"]
+  },
+  {
+    "id": "gates_terminal_3",
+    "category": "gates",
+    "title": "Terminal 3 Gate Locations (C1-C30, D1-D20, E1-E15)",
+    "content": "Terminal 3 Gates: C1-C15 near duty-free zone (3-8 min from immigration). C16-C30 far concourse (8-15 min). D1-D20 Concourse D accessed via walkway from C15 (10-15 min total). E1-E15 Concourse E accessed from Concourse D (15-20 min total, moving walkway available). Nearest amenities: C1-C15 has duty-free, Travel Club Lounge near C8, full restaurants. D1-D20 has café, restrooms, charging. E1-E15 has limited dining, restrooms near E10.",
+    "keywords": ["gate c", "gate d", "gate e", "terminal 3 gate", "concourse", "international gate"]
+  },
+  {
+    "id": "airport_levels",
+    "category": "navigation",
+    "title": "Airport Level Guide",
+    "content": "Airport Levels: Level -1 (Basement): Metro/Train station. Level 0 (Ground): Arrivals, baggage claim, taxis, buses, car rental, prepaid taxi counter. Level 1: Inter-terminal shuttle, luggage storage, medical centre, SIM card counters, services. Level 2: Departures, check-in counters, security, gates, food courts, shops, information desks. Level 3: Airline lounges, VIP services, airport offices. Elevators and escalators at all major junctions.",
+    "keywords": ["level", "floor", "ground floor", "basement", "arrivals level", "departures level", "which floor", "which level"]
+  }
+]

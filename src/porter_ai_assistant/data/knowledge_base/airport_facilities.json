@@ -1,0 +1,86 @@
+[
+  {
+    "id": "facility_restrooms",
+    "category": "facilities",
+    "title": "Restrooms",
+    "content": "Restrooms are located throughout all terminals. Main restroom locations: Terminal 1 near Gates A5, A15, A25; Terminal 2 near Gates B5, B12, B20; Terminal 3 near Gates C8, C15, C22. All locations include accessible restrooms, family restrooms with baby changing stations, and standard facilities. Look for blue restroom signs overhead. Janitors clean every 30 minutes during peak hours.",
+    "keywords": ["restroom", "bathroom", "toilet", "washroom", "lavatory", "baby changing", "diaper"]
+  },
+  {
+    "id": "facility_prayer_room",
+    "category": "facilities",
+    "title": "Prayer and Meditation Rooms",
+    "content": "Multi-faith prayer rooms are on Level 2, near Gate A15 (domestic side) and near Gate C10 (international side). Rooms are open 24 hours, provide prayer mats, and have separate sections for men and women. Ablution/wudu facilities are adjacent to the prayer rooms. A quiet meditation room is also available near the prayer room at Gate C10.",
+    "keywords": ["prayer", "prayer room", "meditation", "mosque", "church", "temple", "worship", "faith", "ablution", "wudu", "namaz"]
+  },
+  {
+    "id": "facility_charging",
+    "category": "facilities",
+    "title": "Phone and Device Charging",
+    "content": "Free charging counters with universal outlets are near most gate areas — look for the charging symbol signs. USB charging ports are built into seating areas near Gates B and C. Charging lockers are available near the food court — you can lock your device while it charges. The nearest charging stations are typically within 50 meters of any gate. Bring your own cable for fastest charging.",
+    "keywords": ["charge", "charging", "phone charge", "battery", "power outlet", "usb", "plug", "socket", "power bank"]
+  },
+  {
+    "id": "facility_wifi",
+    "category": "facilities",
+    "title": "WiFi and Internet",
+    "content": "Free WiFi is available airport-wide. Connect to 'Airport_Free_WiFi' network, open browser, enter phone number or email for 4-hour complimentary session. Premium high-speed WiFi passes available at WiFi kiosks or through the airport app. Speed is generally sufficient for video calls and streaming. Business centres with wired internet and printing are on Level 2 near Gate B10.",
+    "keywords": ["wifi", "internet", "wi-fi", "wireless", "hotspot", "connect", "online", "network"]
+  },
+  {
+    "id": "facility_medical",
+    "category": "facilities",
+    "title": "Medical Centre and First Aid",
+    "content": "The airport medical centre is on Level 1, between Terminals 1 and 2. Staffed 24/7 with doctors and nurses for emergencies and common health issues. First aid stations are near Gate A10 (domestic), Gate C20 (international), and the arrivals hall on Level 0. Pharmacy on Level 1 near medical centre, open 6:00 AM to midnight. Smaller pharmacy kiosk past international security near Gate C15. For emergencies, dial airport emergency number on posted signs or ask any staff.",
+    "keywords": ["medical", "doctor", "nurse", "first aid", "pharmacy", "medicine", "hospital", "health", "emergency", "sick", "ill", "injury", "hurt", "ambulance"]
+  },
+  {
+    "id": "facility_currency",
+    "category": "facilities",
+    "title": "Currency Exchange and ATMs",
+    "content": "Currency exchange counters: Before security near main check-in hall entrance on Level 2; after security in duty-free area near Gate B5; Arrivals next to baggage claim on Level 0. ATMs dispensing foreign currency are near exchange counters. Rates vary between providers — arrivals counters tend to have slightly better rates for incoming passengers. Major banks (SBI, HDFC, ICICI) have ATMs throughout the terminal.",
+    "keywords": ["currency", "exchange", "money", "atm", "cash", "foreign exchange", "forex", "dollar", "euro", "rupee", "convert"]
+  },
+  {
+    "id": "facility_sim_card",
+    "category": "facilities",
+    "title": "SIM Cards and Mobile Services",
+    "content": "SIM card counters in Arrivals area on Level 0 after customs — Jio, Airtel, and Vi have kiosks. Also on Level 1 near inter-terminal area. Need passport and passport-size photo for verification. Prepaid tourist SIM cards with data packages start from ₹500. Activation takes 15-30 minutes. Some kiosks sell international roaming eSIMs for compatible phones.",
+    "keywords": ["sim card", "sim", "mobile", "phone plan", "data plan", "cellular", "jio", "airtel", "vi", "vodafone", "esim", "roaming"]
+  },
+  {
+    "id": "facility_luggage_storage",
+    "category": "facilities",
+    "title": "Luggage Storage and Left Luggage",
+    "content": "Luggage storage facility on Level 1, near the inter-terminal shuttle station. Accepts bags of all sizes for hourly or daily rates — typically ₹100-200 per bag per day for standard luggage. Open 24 hours. Valid ID required to store and retrieve bags. Luggage wrapping service near check-in hall entrance on Level 2 — bright green or blue booths, ₹300-500 per bag. Wrapping protects luggage from damage and tampering.",
+    "keywords": ["luggage storage", "left luggage", "store bag", "locker", "luggage wrap", "wrapping", "cloakroom", "storage"]
+  },
+  {
+    "id": "facility_lounge",
+    "category": "facilities",
+    "title": "Airport Lounges",
+    "content": "Airport lounges: Plaza Premium Lounge on Level 3 near Gate B10 (domestic and international); Travel Club Lounge after international security near Gate C8; Encalm Privé on Level 3 near Gate A20 (domestic). Priority Pass accepted at all lounges. Business/first class boarding pass or lounge membership card required. Lounges offer complimentary food, beverages, WiFi, showers, and comfortable seating. Some offer sleeping pods and spa services.",
+    "keywords": ["lounge", "vip", "priority pass", "business class", "first class", "plaza premium", "rest", "sleep", "shower", "relax"]
+  },
+  {
+    "id": "facility_smoking",
+    "category": "facilities",
+    "title": "Smoking Areas",
+    "content": "Smoking is not permitted inside terminal buildings. Designated smoking zones are located outside terminal buildings near Exits 1, 4, and 7 on ground floor. Some airports have enclosed smoking lounges — check with airport information. Carrying lighters is restricted through security; one lighter per person permitted on your person, not in carry-on bag.",
+    "keywords": ["smoking", "smoke", "cigarette", "smoking area", "smoking zone", "lighter", "tobacco"]
+  },
+  {
+    "id": "facility_elevator_escalator",
+    "category": "facilities",
+    "title": "Elevators and Escalators",
+    "content": "Elevators are located at each terminal junction and near every 10th gate. All elevators are wheelchair accessible with braille signage. Escalators connect all levels at central locations. Moving walkways in Concourse D save time for long-distance gate transfers. Level 0: Arrivals/Baggage; Level 1: Inter-terminal/Services; Level 2: Departures/Check-in; Level 3: Lounges/Office; Level -1: Metro station.",
+    "keywords": ["elevator", "lift", "escalator", "stairs", "moving walkway", "travelator", "wheelchair", "accessible", "level", "floor"]
+  },
+  {
+    "id": "facility_information_desk",
+    "category": "facilities",
+    "title": "Information Desks",
+    "content": "Airport information desks are at the main entrance of each terminal on Level 2, and near Gate A1, B1, and C1. Staff speak English, Hindi, and major regional languages. They provide gate info, directions, lost & found service, and general airport assistance. Flight Information Display Screens (FIDS) are at every 50-meter interval throughout the terminals. Airport help app available for download.",
+    "keywords": ["information", "info desk", "help desk", "assistance", "information counter", "help", "directions", "lost and found"]
+  }
+]

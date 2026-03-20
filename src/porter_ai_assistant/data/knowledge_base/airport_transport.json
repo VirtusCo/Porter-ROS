@@ -1,0 +1,37 @@
+[
+  {
+    "id": "transport_taxi",
+    "category": "transport",
+    "title": "Taxi and Cab Services",
+    "content": "Taxis available from ground transportation on Level 0 (arrivals). Prepaid taxi counter inside arrivals hall near Exit 4 — pay fixed rate at counter, get receipt (safest, recommended for first-time visitors). App-based cabs: Uber and Ola pick-up at designated area outside Exit 5 — book through app. Airport metered taxi stand outside Exit 6. Prepaid taxi rates: City centre ₹500-800, suburbs ₹800-1500 depending on distance. Available 24/7.",
+    "keywords": ["taxi", "cab", "uber", "ola", "prepaid taxi", "ride", "car", "drop", "pick up"]
+  },
+  {
+    "id": "transport_metro",
+    "category": "transport",
+    "title": "Metro and Train",
+    "content": "Airport Metro station on Level -1 (basement), follow 'Metro' signs from arrivals. Trains to city centre every 10-15 minutes, 5:00 AM to 11:30 PM. Journey 20-30 minutes to main city station. Fare ₹60-100 depending on distance. Buy tokens at station or use metro smart card. Express metro (non-stop) available during peak hours. Station is air-conditioned with seating. Last train at 11:30 PM — after that, use taxi or bus.",
+    "keywords": ["metro", "train", "rail", "subway", "underground", "station", "public transport"]
+  },
+  {
+    "id": "transport_bus",
+    "category": "transport",
+    "title": "Bus and Shuttle Services",
+    "content": "Airport shuttle buses from bus terminal on Level 0, outside Exit 8. City shuttle every 30 minutes to major city stops (₹100-200). Hotel shuttles — check with your hotel, many offer free airport pickup. Inter-terminal shuttle free, every 10 minutes from same area. Late-night frequency reduces after 11 PM — consider taxi. Long-distance coach services to nearby cities available from bus bay on Level 0.",
+    "keywords": ["bus", "shuttle", "coach", "public bus", "transport", "bus stop", "bus terminal"]
+  },
+  {
+    "id": "transport_car_rental",
+    "category": "transport",
+    "title": "Car Rental",
+    "content": "Car rental counters on Level 0 in arrivals near Exit 3. International companies: Avis, Hertz, Budget, Europcar. Local self-drive: Zoomcar, Myles. Need valid driver's license (international visitors need International Driving Permit), credit card, and passport. Book online for better rates. Pick-up area in parking structure, short walk from counters. Return at same location. Fuel policy varies by company.",
+    "keywords": ["car rental", "rent a car", "hire car", "drive", "zoomcar", "avis", "hertz", "self drive"]
+  },
+  {
+    "id": "transport_parking",
+    "category": "transport",
+    "title": "Airport Parking",
+    "content": "Short-term parking (P1): Closest to terminals, ₹100/hour, max 24 hours. Long-term parking (P2): ₹500/day, free shuttle to terminals every 10 min. Valet parking: ₹1500/day, drop-off at terminal entrance. Covered multi-level parking available. Disabled parking bays near terminal entrances with accessible paths. Pay at automated kiosks or app. Reserve online for guaranteed spot during peak travel seasons.",
+    "keywords": ["parking", "park", "car park", "valet", "garage", "lot"]
+  }
+]

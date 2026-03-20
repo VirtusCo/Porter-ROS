@@ -1,0 +1,4 @@
+tests:
+  common.transport:
+    tags: common transport
+    platform_allow: native_sim

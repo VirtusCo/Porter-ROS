@@ -1,0 +1,46 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Porter LIDAR Processor (C++) Parameters
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# High-performance C++17 scan processing for Porter Robot (VirtusCo).
+# Subscribes to /scan -> applies 6-stage filter pipeline -> publishes /scan/processed.
+#
+# Pipeline order (fixed):
+#   range_clamp -> outlier_rejection -> median -> smoothing -> roi_crop -> downsample
+#
+# Tuning guide:
+#   - Airport environments: enable range_clamp + outlier + median + smoothing
+#   - Noisy environments:   increase outlier_threshold, enable smoothing
+#   - RPi performance:      enable downsample (factor=2)
+#   - Forward-only nav:     enable roi_crop with [-1.5708, 1.5708] (-90 to +90 deg)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+lidar_processor_node:
+  ros__parameters:
+    # ── Range Clamping ─────────────────────────────────────────────────────
+    min_range: 0.12        # metres — below this is sensor noise
+    max_range: 12.0        # metres — X4 Pro rated max range
+
+    # ── Outlier Rejection (MAD-based) ──────────────────────────────────────
+    outlier_threshold: 3.0 # rejection at threshold * MAD from median
+
+    # ── Median Filter ──────────────────────────────────────────────────────
+    median_window: 5       # sliding window width (forced odd, >= 3)
+
+    # ── Exponential Moving Average Smoothing ───────────────────────────────
+    smoothing_alpha: 0.3   # 0 = keep previous, 1 = instant (no smoothing)
+
+    # ── ROI Crop (radians) ─────────────────────────────────────────────────
+    roi_angle_min: -3.14159  # radians (-180 degrees) — full circle
+    roi_angle_max: 3.14159   # radians (+180 degrees) — full circle
+
+    # ── Downsample ─────────────────────────────────────────────────────────
+    downsample_factor: 1     # 1 = no downsampling
+
+    # ── Enable/Disable Individual Filters ──────────────────────────────────
+    enable_range_clamp: true
+    enable_outlier_rejection: true
+    enable_median: true
+    enable_smoothing: true
+    enable_roi_crop: false   # disabled by default — full 360 scan
+    enable_downsample: false # disabled by default — keep full resolution

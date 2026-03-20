@@ -1,0 +1,8 @@
+# Request robot to navigate to a location
+string destination_id            # Semantic ID from airport map
+string session_id                # Passenger session for logging
+bool   escort_mode               # True = wait for passenger
+---
+bool   accepted                  # True if navigation accepted
+string reason                    # Rejection reason if not accepted
+float32 estimated_time_s         # Estimated arrival time (seconds)

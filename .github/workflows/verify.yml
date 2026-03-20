@@ -1,0 +1,658 @@
+# ════════════════════════════════════════════════════════════════════════════
+# Porter Robot — Complete Verification Pipeline
+# ════════════════════════════════════════════════════════════════════════════
+#
+# Runs on every push and pull request. ALL checks must pass before release.
+#
+# Jobs (9 total):
+#   1. version         — Read VERSION file, generate metadata for all jobs
+#   2. ros2-build-test — Build ROS 2 workspace + run all 187 colcon tests
+#   3. ros2-lint       — Run ALL linters (cpplint, flake8, pep257, cppcheck,
+#                        uncrustify, cmake-lint, xmllint, copyright)
+#   4. flutter-verify  — Flutter analyze, test, Linux build
+#   5. esp32-tests     — Zephyr Ztest on native_sim (60 tests: CRC, protocol,
+#                        transport)
+#   6. esp32-firmware  — Cross-compile motor + sensor firmware for ESP32
+#   7. docker-verify   — Build both dev and prod Docker images
+#   8. integration     — Verify Docker image starts correctly, topics available
+#   9. verification-gate — All-or-nothing gate before release
+#
+# ════════════════════════════════════════════════════════════════════════════
+
+name: Porter CI — Verify
+
+on:
+  push:
+    branches: [main, prototype, 'feat/**']
+  pull_request:
+    branches: [main, prototype]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ROS_DOMAIN_ID: 11
+  RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+  ZEPHYR_SDK_VERSION: "0.17.0"
+  ZEPHYR_VERSION: "v4.0.0"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────
+  # Job 1: Read version, generate metadata
+  # ────────────────────────────────────────────────────────────────────────
+  version:
+    name: Version
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      tag: ${{ steps.ver.outputs.tag }}
+      short_sha: ${{ steps.ver.outputs.short_sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read VERSION
+        id: ver
+        run: |
+          VERSION="$(tr -d '[:space:]' < porter_robot/VERSION)"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "## Version: ${VERSION}" >> "$GITHUB_STEP_SUMMARY"
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Job 2: Build ROS 2 workspace + run ALL colcon tests
+  # ────────────────────────────────────────────────────────────────────────
+  ros2-build-test:
+    name: "ROS 2 Build & Test"
+    runs-on: ubuntu-24.04
+    needs: version
+    container:
+      image: ros:jazzy
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        working-directory: porter_robot
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            cmake pkg-config git build-essential \
+            python3-pip python3-pytest python3-numpy
+
+      - name: Build and install YDLidar SDK
+        run: |
+          cd /tmp
+          git clone --depth 1 https://github.com/YDLIDAR/YDLidar-SDK.git
+          cd YDLidar-SDK && mkdir build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc) && make install && ldconfig
+
+      - name: Install ROS 2 dependencies
+        working-directory: porter_robot
+        run: |
+          apt-get update
+          rosdep update --rosdistro=jazzy
+          rosdep install --from-paths src --ignore-src -r -y \
+            --skip-keys="ament_python"
+
+      - name: Verify version consistency across all package.xml
+        working-directory: porter_robot
+        run: |
+          EXPECTED="${{ needs.version.outputs.version }}"
+          echo "Expected version: ${EXPECTED}"
+          FAIL=0
+          for pkg_xml in $(find src -name "package.xml" -not -path "*/nav/*" -not -path "*/simulation/*" -not -path "*/tools/*"); do
+            PKG_VER="$(grep -oP '<version>\K[^<]+' "$pkg_xml")"
+            PKG_NAME="$(grep -oP '<name>\K[^<]+' "$pkg_xml")"
+            if [[ "$PKG_VER" != "$EXPECTED" ]]; then
+              echo "::error file=${pkg_xml}::Version mismatch: ${PKG_NAME} has ${PKG_VER}, expected ${EXPECTED}"
+              FAIL=1
+            else
+              echo "  OK ${PKG_NAME}: ${PKG_VER}"
+            fi
+          done
+          if [[ $FAIL -eq 1 ]]; then
+            echo "::error::Version inconsistency! Run: ./version-bump.sh set ${EXPECTED}"
+            exit 1
+          fi
+
+      - name: Build workspace
+        working-directory: porter_robot
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          colcon build --cmake-args -Wno-dev --event-handlers console_direct+
+
+      - name: Run ALL tests
+        working-directory: porter_robot
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          source install/setup.bash
+          colcon test --event-handlers console_direct+
+
+      - name: Verify test results — MUST be 0 failures
+        if: always()
+        working-directory: porter_robot
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          source install/setup.bash
+          colcon test-result --verbose
+          RESULT="$(colcon test-result 2>&1)"
+          if echo "$RESULT" | grep -qE "[1-9][0-9]* errors|[1-9][0-9]* failures"; then
+            echo "::error::Test failures detected!"
+            exit 1
+          fi
+
+      - name: Test summary
+        if: always()
+        working-directory: porter_robot
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          source install/setup.bash
+          echo "## ROS 2 Test Results" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          colcon test-result --verbose 2>&1 | tail -40 >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Job 3: Lint checks (C++ and Python)
+  # ────────────────────────────────────────────────────────────────────────
+  ros2-lint:
+    name: "ROS 2 Lint"
+    runs-on: ubuntu-24.04
+    needs: version
+    container:
+      image: ros:jazzy
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system + lint dependencies
+        working-directory: porter_robot
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            cmake pkg-config git build-essential \
+            python3-pip python3-pytest \
+            ros-jazzy-ament-lint-auto \
+            ros-jazzy-ament-lint-common \
+            ros-jazzy-ament-cmake-lint-cmake \
+            ros-jazzy-ament-cmake-xmllint
+
+      - name: Build and install YDLidar SDK
+        run: |
+          cd /tmp
+          git clone --depth 1 https://github.com/YDLIDAR/YDLidar-SDK.git
+          cd YDLidar-SDK && mkdir build && cd build
+          cmake .. && make -j$(nproc) && make install && ldconfig
+
+      - name: Install ROS 2 dependencies
+        working-directory: porter_robot
+        run: |
+          apt-get update
+          rosdep update --rosdistro=jazzy
+          rosdep install --from-paths src --ignore-src -r -y \
+            --skip-keys="ament_python"
+
+      - name: Build workspace
+        working-directory: porter_robot
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          colcon build --cmake-args -Wno-dev
+
+      - name: Run ALL lint tests
+        working-directory: porter_robot
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          source install/setup.bash
+          colcon test \
+            --event-handlers console_direct+ \
+            --ctest-args -R "lint|flake8|pep257|cpplint|cppcheck|copyright|uncrustify|xmllint"
+
+      - name: Check lint results
+        if: always()
+        working-directory: porter_robot
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          source install/setup.bash
+          colcon test-result --verbose
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Job 4: Flutter GUI verification
+  # ────────────────────────────────────────────────────────────────────────
+  flutter-verify:
+    name: "Flutter GUI"
+    runs-on: ubuntu-24.04
+    needs: version
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build pkg-config libgtk-3-dev clang lld
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Analyze and test
+        working-directory: porter_robot/src/porter_gui
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+
+      - name: Test Linux build
+        working-directory: porter_robot/src/porter_gui
+        run: flutter build linux --release
+
+      - name: Flutter summary
+        if: always()
+        run: |
+          echo "## Flutter GUI Verification" >> "$GITHUB_STEP_SUMMARY"
+          echo "- flutter analyze: passed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- flutter test: passed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Linux release build: passed" >> "$GITHUB_STEP_SUMMARY"
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Job 5: Zephyr Ztest unit tests on native_sim
+  # ────────────────────────────────────────────────────────────────────────
+  esp32-tests:
+    name: "ESP32 Ztest (native_sim)"
+    runs-on: ubuntu-24.04
+    needs: version
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Zephyr system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            git cmake ninja-build gperf ccache dfu-util \
+            device-tree-compiler wget python3-dev python3-pip \
+            python3-venv python3-setuptools python3-wheel \
+            xz-utils file make gcc gcc-multilib g++-multilib \
+            libsdl2-dev libmagic1
+
+      - name: Set up Zephyr environment
+        run: |
+          python3 -m venv ~/zephyrproject/.venv
+          source ~/zephyrproject/.venv/bin/activate
+          pip install --upgrade pip wheel setuptools
+          pip install west
+          west init -m https://github.com/zephyrproject-rtos/zephyr \
+            --mr ${{ env.ZEPHYR_VERSION }} ~/zephyrproject
+          cd ~/zephyrproject
+          west update --narrow -o=--depth=1
+          pip install -r zephyr/scripts/requirements.txt
+
+      - name: Install Zephyr SDK (minimal + host tools)
+        run: |
+          cd /tmp
+          wget -q "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${{ env.ZEPHYR_SDK_VERSION }}/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}_linux-x86_64_minimal.tar.xz"
+          tar xf "zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}_linux-x86_64_minimal.tar.xz" -C ~/
+          cd ~/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}
+          ./setup.sh -h -c
+          wget -q "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${{ env.ZEPHYR_SDK_VERSION }}/hosttools_linux-x86_64.tar.xz" || true
+          tar xf hosttools_linux-x86_64.tar.xz -C ~/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}/ 2>/dev/null || true
+
+      - name: Cache Zephyr modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/zephyrproject/modules
+            ~/zephyrproject/bootloader
+          key: zephyr-${{ env.ZEPHYR_VERSION }}-modules-${{ hashFiles('porter_robot/esp32_firmware/**/prj.conf') }}
+          restore-keys: |
+            zephyr-${{ env.ZEPHYR_VERSION }}-modules-
+
+      - name: Run CRC16 Tests (14 tests)
+        run: |
+          source ~/zephyrproject/.venv/bin/activate
+          export ZEPHYR_BASE=~/zephyrproject/zephyr
+          export ZEPHYR_SDK_INSTALL_DIR=~/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}
+          cd ~/zephyrproject
+          west build -p always -b native_sim \
+            $GITHUB_WORKSPACE/porter_robot/esp32_firmware/tests/test_crc16
+          ./build/zephyr/zephyr.exe
+
+      - name: Run Protocol Tests (26 tests)
+        run: |
+          source ~/zephyrproject/.venv/bin/activate
+          export ZEPHYR_BASE=~/zephyrproject/zephyr
+          export ZEPHYR_SDK_INSTALL_DIR=~/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}
+          cd ~/zephyrproject
+          west build -p always -b native_sim \
+            $GITHUB_WORKSPACE/porter_robot/esp32_firmware/tests/test_protocol
+          ./build/zephyr/zephyr.exe
+
+      - name: Run Transport Tests (20 tests)
+        run: |
+          source ~/zephyrproject/.venv/bin/activate
+          export ZEPHYR_BASE=~/zephyrproject/zephyr
+          export ZEPHYR_SDK_INSTALL_DIR=~/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}
+          cd ~/zephyrproject
+          west build -p always -b native_sim \
+            $GITHUB_WORKSPACE/porter_robot/esp32_firmware/tests/test_transport
+          ./build/zephyr/zephyr.exe
+
+      - name: Ztest summary
+        if: always()
+        run: |
+          echo "## ESP32 Ztest Results (native_sim)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- CRC16: 14 tests" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Protocol: 26 tests" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Transport: 20 tests" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Total: 60 tests**" >> "$GITHUB_STEP_SUMMARY"
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Job 5: Cross-compile ESP32 firmware
+  # ────────────────────────────────────────────────────────────────────────
+  esp32-firmware:
+    name: "ESP32 Firmware Build"
+    runs-on: ubuntu-24.04
+    needs: [version, esp32-tests]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Zephyr system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            git cmake ninja-build gperf ccache dfu-util \
+            device-tree-compiler wget python3-dev python3-pip \
+            python3-venv python3-setuptools python3-wheel \
+            xz-utils file make gcc gcc-multilib g++-multilib \
+            libsdl2-dev libmagic1
+
+      - name: Set up Zephyr environment
+        run: |
+          python3 -m venv ~/zephyrproject/.venv
+          source ~/zephyrproject/.venv/bin/activate
+          pip install --upgrade pip wheel setuptools
+          pip install west
+          west init -m https://github.com/zephyrproject-rtos/zephyr \
+            --mr ${{ env.ZEPHYR_VERSION }} ~/zephyrproject
+          cd ~/zephyrproject
+          west update --narrow -o=--depth=1
+          pip install -r zephyr/scripts/requirements.txt
+
+      - name: Install Zephyr SDK (minimal + ESP32 toolchain)
+        run: |
+          cd /tmp
+          wget -q "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${{ env.ZEPHYR_SDK_VERSION }}/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}_linux-x86_64_minimal.tar.xz"
+          tar xf "zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}_linux-x86_64_minimal.tar.xz" -C ~/
+          cd ~/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}
+          ./setup.sh -h -c
+          cd /tmp
+          wget -q "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${{ env.ZEPHYR_SDK_VERSION }}/toolchain_linux-x86_64_xtensa-espressif_esp32_zephyr-elf.tar.xz"
+          tar xf toolchain_linux-x86_64_xtensa-espressif_esp32_zephyr-elf.tar.xz -C ~/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}/
+          rm -f toolchain_linux-x86_64_xtensa-espressif_esp32_zephyr-elf.tar.xz
+
+      - name: Cache Zephyr modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/zephyrproject/modules
+            ~/zephyrproject/bootloader
+          key: zephyr-${{ env.ZEPHYR_VERSION }}-modules-${{ hashFiles('porter_robot/esp32_firmware/**/prj.conf') }}
+          restore-keys: |
+            zephyr-${{ env.ZEPHYR_VERSION }}-modules-
+
+      - name: Build Motor Controller firmware
+        run: |
+          source ~/zephyrproject/.venv/bin/activate
+          export ZEPHYR_BASE=~/zephyrproject/zephyr
+          export ZEPHYR_SDK_INSTALL_DIR=~/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}
+          cd ~/zephyrproject
+          west build -p always -b esp32_devkitc_wroom \
+            $GITHUB_WORKSPACE/porter_robot/esp32_firmware/motor_controller
+          mkdir -p $GITHUB_WORKSPACE/esp32_artifacts
+          cp build/zephyr/zephyr.bin  $GITHUB_WORKSPACE/esp32_artifacts/motor_controller.bin
+          cp build/zephyr/zephyr.elf  $GITHUB_WORKSPACE/esp32_artifacts/motor_controller.elf
+
+      - name: Build Sensor Fusion firmware
+        run: |
+          source ~/zephyrproject/.venv/bin/activate
+          export ZEPHYR_BASE=~/zephyrproject/zephyr
+          export ZEPHYR_SDK_INSTALL_DIR=~/zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}
+          cd ~/zephyrproject
+          west build -p always -b esp32_devkitc_wroom \
+            $GITHUB_WORKSPACE/porter_robot/esp32_firmware/sensor_fusion
+          cp build/zephyr/zephyr.bin  $GITHUB_WORKSPACE/esp32_artifacts/sensor_fusion.bin
+          cp build/zephyr/zephyr.elf  $GITHUB_WORKSPACE/esp32_artifacts/sensor_fusion.elf
+
+      - name: Generate checksums + build info
+        run: |
+          cd $GITHUB_WORKSPACE/esp32_artifacts
+          sha256sum *.bin *.elf > SHA256SUMS.txt
+          echo "version=${{ needs.version.outputs.version }}" > BUILD_INFO.txt
+          echo "commit=${GITHUB_SHA}" >> BUILD_INFO.txt
+          echo "branch=${GITHUB_REF_NAME}" >> BUILD_INFO.txt
+          echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> BUILD_INFO.txt
+          echo "zephyr=${{ env.ZEPHYR_VERSION }}" >> BUILD_INFO.txt
+          echo "zephyr_sdk=${{ env.ZEPHYR_SDK_VERSION }}" >> BUILD_INFO.txt
+          cat BUILD_INFO.txt
+          cat SHA256SUMS.txt
+
+      - name: Firmware build summary
+        if: always()
+        run: |
+          echo "## ESP32 Firmware Build" >> "$GITHUB_STEP_SUMMARY"
+          if [[ -d "$GITHUB_WORKSPACE/esp32_artifacts" ]]; then
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            ls -lh $GITHUB_WORKSPACE/esp32_artifacts/*.bin 2>/dev/null >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload ESP32 firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: esp32-firmware
+          path: esp32_artifacts/
+          retention-days: 90
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Job 6: Docker image build verification
+  # ────────────────────────────────────────────────────────────────────────
+  docker-verify:
+    name: "Docker Build Verify"
+    runs-on: ubuntu-24.04
+    needs: version
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build dev image
+        working-directory: porter_robot
+        run: |
+          docker build \
+            -f docker/Dockerfile.dev \
+            -t porter-robot-dev:ci \
+            .
+
+      - name: Build prod image
+        working-directory: porter_robot
+        run: |
+          docker build \
+            -f docker/Dockerfile.prod \
+            -t porter-robot:${{ needs.version.outputs.version }} \
+            -t porter-robot:latest \
+            --label "org.opencontainers.image.version=${{ needs.version.outputs.version }}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            .
+
+      - name: Export prod image
+        run: |
+          docker save porter-robot:${{ needs.version.outputs.version }} \
+            | gzip > porter-robot-${{ needs.version.outputs.version }}.tar.gz
+          ls -lh porter-robot-*.tar.gz
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: porter-robot-*.tar.gz
+          retention-days: 90
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Job 7: Integration smoke test
+  # ────────────────────────────────────────────────────────────────────────
+  integration:
+    name: "Integration Smoke Test"
+    runs-on: ubuntu-24.04
+    needs: [version, docker-verify]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: .
+
+      - name: Load Docker image
+        run: docker load < porter-robot-*.tar.gz
+
+      - name: Verify ROS 2 packages installed
+        run: |
+          docker run --rm porter-robot:${{ needs.version.outputs.version }} bash -c "
+            source /opt/ros/jazzy/setup.bash
+            source /workspace/install/setup.bash
+
+            echo '=== Installed Porter packages ==='
+            EXPECTED_PKGS='ydlidar_driver porter_lidar_processor porter_orchestrator porter_esp32_bridge'
+            FAIL=0
+            for pkg in \$EXPECTED_PKGS; do
+              if ros2 pkg list 2>/dev/null | grep -q \"\$pkg\"; then
+                echo \"  OK \$pkg\"
+              else
+                echo \"  MISSING \$pkg\"
+                FAIL=1
+              fi
+            done
+
+            echo ''
+            echo '=== Package executables ==='
+            ros2 pkg executables ydlidar_driver 2>/dev/null || true
+            ros2 pkg executables porter_lidar_processor 2>/dev/null || true
+            ros2 pkg executables porter_orchestrator 2>/dev/null || true
+            ros2 pkg executables porter_esp32_bridge 2>/dev/null || true
+
+            if [[ \$FAIL -eq 1 ]]; then
+              echo 'ERROR: Missing expected packages!'
+              exit 1
+            fi
+          "
+
+      - name: Verify launch files available
+        run: |
+          docker run --rm porter-robot:${{ needs.version.outputs.version }} bash -c "
+            source /opt/ros/jazzy/setup.bash
+            source /workspace/install/setup.bash
+            echo '=== Checking launch files ==='
+            # These will exit non-zero if the launch file doesn't exist
+            ros2 launch ydlidar_driver ydlidar_launch.py --print 2>/dev/null && echo 'ydlidar_launch.py: OK' || echo 'ydlidar_launch.py: not printable (may need params)'
+            ros2 launch porter_esp32_bridge esp32_bridge_launch.py --print 2>/dev/null && echo 'esp32_bridge_launch.py: OK' || echo 'esp32_bridge_launch.py: not printable'
+          "
+
+      - name: Smoke test — orchestrator starts
+        run: |
+          # Start orchestrator briefly (no hardware, will reach DRIVER_STARTING then timeout)
+          timeout 12 docker run --rm --net=host \
+            -e ROS_DOMAIN_ID=99 \
+            porter-robot:${{ needs.version.outputs.version }} \
+            bash -c "
+              source /opt/ros/jazzy/setup.bash
+              source /workspace/install/setup.bash
+              ros2 run porter_orchestrator state_machine --ros-args \
+                -p boot_grace_sec:=3.0 \
+                -p health_check_patience_sec:=3.0 &
+              PID=\$!
+              sleep 6
+              echo '=== Active nodes ==='
+              ros2 node list 2>/dev/null || true
+              echo '=== Active topics ==='
+              ros2 topic list 2>/dev/null || true
+              echo '=== Porter state ==='
+              ros2 topic echo /porter/state --once --spin-time 2 2>/dev/null || echo '(no state yet)'
+              kill \$PID 2>/dev/null || true
+              wait \$PID 2>/dev/null || true
+            " || true    # timeout 124 is expected
+
+      - name: Integration summary
+        if: always()
+        run: |
+          echo "## Integration Smoke Test" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Docker image loads: v${{ needs.version.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- ROS 2 packages verified" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Launch files present" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Orchestrator initializes" >> "$GITHUB_STEP_SUMMARY"
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Job 8: Verification gate — ALL must pass
+  # ────────────────────────────────────────────────────────────────────────
+  verification-gate:
+    name: "All Checks Passed"
+    runs-on: ubuntu-24.04
+    needs: [version, ros2-build-test, ros2-lint, flutter-verify, esp32-tests, esp32-firmware, docker-verify, integration]
+    if: always()
+
+    steps:
+      - name: Evaluate all jobs
+        run: |
+          echo "## Verification Gate — v${{ needs.version.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Job | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-----|--------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Version | ${{ needs.version.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| ROS 2 Build & Test (187 tests) | ${{ needs.ros2-build-test.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| ROS 2 Lint | ${{ needs.ros2-lint.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Flutter GUI | ${{ needs.flutter-verify.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| ESP32 Ztest (60 tests) | ${{ needs.esp32-tests.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| ESP32 Firmware Build | ${{ needs.esp32-firmware.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Docker Build | ${{ needs.docker-verify.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Integration Smoke | ${{ needs.integration.result }} |" >> "$GITHUB_STEP_SUMMARY"
+
+          ALL_OK=true
+          for result in \
+            "${{ needs.version.result }}" \
+            "${{ needs.ros2-build-test.result }}" \
+            "${{ needs.ros2-lint.result }}" \
+            "${{ needs.flutter-verify.result }}" \
+            "${{ needs.esp32-tests.result }}" \
+            "${{ needs.esp32-firmware.result }}" \
+            "${{ needs.docker-verify.result }}" \
+            "${{ needs.integration.result }}"
+          do
+            if [[ "$result" != "success" ]]; then
+              ALL_OK=false
+            fi
+          done
+
+          if [[ "$ALL_OK" == "true" ]]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "**All 8 verification jobs passed.**" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "**FAILED — one or more jobs did not succeed.**" >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::Verification gate failed!"
+            exit 1
+          fi

@@ -1,0 +1,84 @@
+# Porter Robot — Common Library Kconfig
+#
+# Transport abstraction layer: selects hardware UART or USB CDC ACM
+# at build time. Include this from application Kconfig files with:
+#   rsource "../common/Kconfig"
+
+menuconfig PORTER_TRANSPORT
+	bool "Porter protocol transport layer"
+	default y
+	help
+	  Enable the Porter protocol transport abstraction layer.
+	  Provides a hardware-independent API for RPi ↔ ESP32 communication.
+
+if PORTER_TRANSPORT
+
+choice PORTER_TRANSPORT_BACKEND
+	prompt "Transport backend"
+	default PORTER_TRANSPORT_UART
+	help
+	  Select the physical transport for host communication.
+
+config PORTER_TRANSPORT_UART
+	bool "Hardware UART (external USB-UART bridge)"
+	depends on SERIAL
+	help
+	  Use a hardware UART for host communication. An external USB-UART
+	  bridge chip (CP2102, CH340, FTDI) converts UART signals to USB.
+
+	  Select this for ESP32-WROOM-32 and ESP32-DevKitC boards that
+	  do NOT have native USB support.
+
+	  The devicetree alias "protocol-uart" must point to a hardware
+	  UART node (e.g., &uart2).
+
+	  Required Kconfig: CONFIG_SERIAL=y
+
+config PORTER_TRANSPORT_CDC_ACM
+	bool "USB CDC ACM (native USB)"
+	depends on USB_DEVICE_STACK
+	depends on SERIAL
+	help
+	  Use USB CDC ACM (virtual serial port) for host communication.
+	  Requires a SoC with native USB OTG hardware.
+
+	  Select this for ESP32-S2, ESP32-S3, or ESP32-C6 boards.
+
+	  The devicetree alias "protocol-uart" must point to a
+	  cdc_acm_uart node (e.g., &cdc_acm_uart0).
+
+	  Required Kconfig:
+	    CONFIG_USB_DEVICE_STACK=y
+	    CONFIG_USBD_CDC_ACM_CLASS=y
+	    CONFIG_UART_LINE_CTRL=y
+
+config PORTER_TRANSPORT_MOCK
+	bool "Mock transport (for testing on native_sim)"
+	help
+	  Use a mock transport with ring buffers for unit testing.
+	  This backend has no hardware dependencies and runs on
+	  native_sim or any POSIX board.
+
+	  Not for production use.
+
+endchoice
+
+config PORTER_TRANSPORT_DEFAULT_BAUDRATE
+	int "Default UART baudrate"
+	default 115200
+	depends on PORTER_TRANSPORT_UART
+	help
+	  Default baudrate for the hardware UART transport.
+	  Must match the RPi-side serial port configuration.
+	  Common values: 115200, 230400, 460800, 921600.
+
+config PORTER_TRANSPORT_DTR_TIMEOUT_MS
+	int "CDC ACM DTR wait timeout (ms)"
+	default 5000
+	depends on PORTER_TRANSPORT_CDC_ACM
+	help
+	  Maximum time (ms) to wait for the host to assert DTR after USB
+	  enumeration. DTR indicates the host has opened the serial port.
+	  Set to 0 to wait indefinitely (not recommended for production).
+
+endif # PORTER_TRANSPORT

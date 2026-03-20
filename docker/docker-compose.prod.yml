@@ -1,0 +1,86 @@
+###############################################################################
+# docker-compose.prod.yml — Porter Robot Production Deployment
+#
+# Usage:   cd porter_robot/          # ← MUST run from repo root
+#          docker compose -f docker/docker-compose.prod.yml build
+#          docker compose -f docker/docker-compose.prod.yml up -d
+#
+# Designed for deployment on Raspberry Pi 5 / Jetson with real hardware.
+###############################################################################
+
+services:
+  # ── Main robot service (LIDAR + processing + orchestration) ───────────────
+  porter_robot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.prod
+    container_name: porter_robot
+    network_mode: host
+    privileged: true
+    restart: unless-stopped
+
+    volumes:
+      - /dev:/dev                                # Hardware device access (LIDAR, ESP32)
+      - porter_maps:/workspace/maps              # Persistent map storage for SLAM
+      - ai_models:/workspace/src/porter_ai_assistant/models  # GGUF model files
+
+    environment:
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+      - ROS_DOMAIN_ID=11
+      - RCUTILS_COLORIZED_OUTPUT=1
+
+    # Default CMD from Dockerfile launches ydlidar_driver.
+    # Override for full stack launch:
+    # command: ["ros2", "launch", "porter_bringup", "porter_bringup_launch.py"]
+
+  # ── AI Assistant (standalone, resource-limited for SLAM coexistence) ────
+  porter_ai:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.prod
+    container_name: porter_ai
+    network_mode: host
+    restart: unless-stopped
+
+    # Resource limits: prevent AI from starving SLAM/Nav2 on RPi 4-core
+    cpus: "2.0"                                  # Max 2 CPU cores (leaves 2 for SLAM stack)
+    mem_limit: 2g                                # Max 2 GB RAM (model ~1 GB + inference overhead)
+    mem_reservation: 1g                          # Soft limit: guaranteed 1 GB
+
+    volumes:
+      - ai_models:/workspace/src/porter_ai_assistant/models  # GGUF model files
+
+    environment:
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+      - ROS_DOMAIN_ID=11
+      - RCUTILS_COLORIZED_OUTPUT=1
+      - PORTER_NICE=10                           # Lower priority than SLAM (nice 10)
+
+    command: ["ros2", "launch", "porter_ai_assistant", "assistant_launch.py", "use_orchestrator:=true"]
+    profiles:
+      - ai                                       # Only starts with: --profile ai
+
+  # ── Test runner (CI) ─────────────────────────────────────────────────────
+  porter_test:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    container_name: porter_test
+    network_mode: host
+
+    environment:
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+      - ROS_DOMAIN_ID=11
+
+    command: >
+      bash -c "source /workspace/install/setup.bash &&
+               colcon test --event-handlers console_direct+ &&
+               colcon test-result --verbose"
+    profiles:
+      - test                                     # Only starts with: --profile test
+
+volumes:
+  porter_maps:
+    name: porter_maps
+  ai_models:
+    name: porter_ai_models                       # Persistent GGUF model storage
