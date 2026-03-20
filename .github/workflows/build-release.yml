@@ -58,7 +58,7 @@ jobs:
           python-version: '3.12'
       - name: Install tools
         run: |
-          pip install west
+          pip install west pyelftools
           sudo apt-get update && sudo apt-get install -y cmake ninja-build gperf ccache \
             device-tree-compiler wget xz-utils file make gcc gcc-multilib g++-multilib
       - name: West init + update
@@ -99,6 +99,10 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - name: Install Linux build deps
+        run: |
+          sudo apt-get update && sudo apt-get install -y \
+            libgtk-3-dev libblkid-dev liblzma-dev
       - name: Build
         run: |
           cd src/porter_gui
