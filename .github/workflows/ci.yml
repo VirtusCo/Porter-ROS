@@ -1,0 +1,82 @@
+# Copyright 2026 VirtusCo
+name: Porter ROS CI
+on:
+  push:
+    branches: [main, prototype, 'feat/**']
+  pull_request:
+    branches: [main, prototype]
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  ROS_DOMAIN_ID: 11
+  RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+
+jobs:
+  unit-tests:
+    name: Unit Tests (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install pytest pytest-cov
+      - run: cd tests && pytest unit/ -v --tb=short
+
+  ros2-build-test:
+    name: ROS 2 Build & Test
+    runs-on: ubuntu-latest
+    container: ros:jazzy
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install deps
+        run: |
+          apt-get update && apt-get install -y python3-pip
+          source /opt/ros/jazzy/setup.bash
+          rosdep update && rosdep install --from-paths src --ignore-src -r -y --skip-keys="ament_python"
+      - name: Build
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          colcon build --symlink-install --cmake-args -Wno-dev
+      - name: Test
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          source install/setup.bash
+          colcon test --event-handlers console_direct+
+          colcon test-result --verbose
+
+  firmware-ztest:
+    name: ESP32 Firmware Ztest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Install west & Zephyr SDK
+        run: |
+          pip install west
+          west init -l esp32_firmware
+      - name: Run Ztest
+        run: |
+          cd esp32_firmware
+          twister -T tests/ -p native_sim --no-color || true
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose -f docker/docker-compose.dev.yml build
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    container: ros:jazzy
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python lint
+        run: |
+          pip install flake8
+          flake8 src/ --max-line-length=99 --exclude=build,install,log --count
