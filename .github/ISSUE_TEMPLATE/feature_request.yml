@@ -1,0 +1,40 @@
+name: Feature Request
+description: Propose a new feature or enhancement.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the feature you would like to see added to the Porter Robot software.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear summary of the proposed feature.
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Explain the problem this feature solves or the scenario where it would be useful.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: Describe how you think this feature should work.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: List any alternative approaches you have considered and why they are insufficient.
+    validations:
+      required: false
