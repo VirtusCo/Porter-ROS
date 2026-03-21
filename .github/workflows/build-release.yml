@@ -6,6 +6,10 @@ on:
     branches: [main, prototype]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  packages: write
+
 defaults:
   run:
     shell: bash
@@ -16,24 +20,64 @@ env:
 
 jobs:
   version:
-    name: Version
+    name: Auto Version Bump
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.ver.outputs.version }}
+      version: ${{ steps.bump.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-      - id: ver
+        with:
+          fetch-depth: 2
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine bump type from commit message
+        id: bump
         run: |
-          VER=$(cat VERSION 2>/dev/null | tr -d '[:space:]' || echo "0.0.0")
-          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          CURRENT=$(cat VERSION 2>/dev/null | tr -d '[:space:]' || echo "0.0.0")
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+
+          # Parse semver
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          MAJOR=${MAJOR:-0}; MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
+
+          # Determine bump from conventional commit prefix
+          if echo "$COMMIT_MSG" | grep -qiE '^(feat|feature)(\(.*\))?!:'; then
+            # Breaking change = major
+            MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0
+            echo "Bump: MAJOR (breaking change)"
+          elif echo "$COMMIT_MSG" | grep -qiE '^(feat|feature)(\(.*\))?:'; then
+            # Feature = minor
+            MINOR=$((MINOR + 1)); PATCH=0
+            echo "Bump: MINOR (new feature)"
+          else
+            # Everything else (fix, docs, ci, chore, refactor) = patch
+            PATCH=$((PATCH + 1))
+            echo "Bump: PATCH"
+          fi
+
+          NEW_VER="${MAJOR}.${MINOR}.${PATCH}"
+          echo "version=$NEW_VER" >> "$GITHUB_OUTPUT"
+          echo "Version: $CURRENT -> $NEW_VER"
+
+          # Write back VERSION file
+          echo "$NEW_VER" > VERSION
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet VERSION; then
+            echo "VERSION unchanged, skipping commit"
+          else
+            git add VERSION
+            git commit -m "chore: bump version to $(cat VERSION) [skip ci]"
+            git push
+          fi
 
   build-docker:
     name: Build & Publish Docker Image
     runs-on: ubuntu-latest
     needs: version
-    permissions:
-      contents: read
-      packages: write
     env:
       REGISTRY: ghcr.io
       IMAGE_NAME: virtusco/porter-robot
@@ -81,9 +125,6 @@ jobs:
     name: Build ESP32 Firmware & Publish Package
     runs-on: ubuntu-latest
     needs: version
-    permissions:
-      contents: read
-      packages: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -183,8 +224,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [version, build-docker, build-esp32, build-flutter, test]
     if: github.event_name == 'push'
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
