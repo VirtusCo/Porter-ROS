@@ -1,0 +1,34 @@
+{
+  "name": "@virtusco/porter-firmware",
+  "version": "0.0.0",
+  "description": "Pre-built ESP32 firmware binaries for the Porter Robot — motor controller + sensor fusion. Flash directly via VS Code extension.",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "keywords": [
+    "esp32",
+    "firmware",
+    "zephyr",
+    "robotics",
+    "porter-robot",
+    "motor-controller",
+    "sensor-fusion",
+    "iot"
+  ],
+  "author": "VirtusCo <virtusco.tech@gmail.com>",
+  "license": "Proprietary",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VirtusCo/Porter-ROS.git",
+    "directory": "esp32_firmware"
+  },
+  "homepage": "https://github.com/VirtusCo/Porter-ROS",
+  "publishConfig": {
+    "@virtusco:registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "bin/",
+    "index.js",
+    "index.d.ts",
+    "README.md"
+  ]
+}
